@@ -13,8 +13,6 @@ env/
 __pycache__/
 *.py[cod]
 *.pyo
-venv/__pycache__/
-venv/templates/__pycache__/
 
 # Logs e arquivos temporários
 *.log

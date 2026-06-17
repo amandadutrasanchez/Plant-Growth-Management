@@ -110,23 +110,31 @@ A unidade de medida central é o **metro quadrado (m²)**, que representa a áre
 ## 📁 Estrutura de Pastas
 
 ```
-capacidade_estufa/
-├── venv/
-│   ├── app.py                  # Aplicação Flask principal (rotas, lógica de negócio)
-│   ├── database.py             # Módulo de acesso ao SQLite (CRUD de projetos, rotas, simulações)
-│   ├── agente_ia.py            # Agente de IA para otimização de alocação
-│   ├── capacidade_estufa.db    # Banco de dados SQLite
-│   ├── rotas_config.json       # Configuração legada de rotas personalizadas (JSON)
-│   └── templates/
-│       ├── index.html          # Dashboard principal
-│       ├── rotas.html          # Gestão de projetos e rotas
-│       ├── simulacao.html      # Tela de simulação
-│       ├── auditoria.html      # Auditoria de capacidade
-│       ├── projetos.html       # Listagem de projetos
-│       └── index_backup.html   # Backup do template principal
-├── requirements.txt            # Dependências Python
-└── README.md                   # Esta documentação
+Plant-Growth-Management/
+├── app.py                  # Aplicação Flask principal (rotas, lógica de negócio)
+├── database.py             # Módulo de acesso ao SQLite (CRUD de projetos, rotas, simulações)
+├── agente_ia.py            # Agente de IA para otimização de alocação
+├── check_db.py             # Utilitário de verificação do banco de dados
+├── rotas_config.json       # Configuração legada de rotas personalizadas (JSON)
+├── templates/
+│   ├── index.html          # Dashboard principal
+│   ├── rotas.html          # Gestão de projetos e rotas
+│   ├── simulacao.html      # Tela de simulação
+│   ├── auditoria.html      # Auditoria de capacidade
+│   ├── projetos.html       # Listagem de projetos
+│   └── index_backup.html   # Backup do template principal
+├── scripts/                # Scripts auxiliares de manutenção
+│   ├── fix_project22.py
+│   ├── fix_schema.py
+│   ├── test_post.py
+│   ├── test_page.html
+│   └── test_rotas.html
+├── requirements.txt        # Dependências Python
+├── .gitignore
+└── README.md               # Esta documentação
 ```
+
+> **Nota:** O banco de dados `capacidade_estufa.db` é gerado localmente na primeira execução e **não é versionado** (listado no `.gitignore`).
 
 ---
 
@@ -199,13 +207,12 @@ export FLASK_SECRET_KEY="sua_chave_secreta_aqui"
 ### 5. Executar a aplicação
 
 ```bash
-cd venv
 python app.py
 ```
 
 A aplicação estará disponível em: `http://localhost:5000`
 
-O banco de dados SQLite (`capacidade_estufa.db`) será criado automaticamente na primeira execução.
+O banco de dados SQLite (`capacidade_estufa.db`) será criado automaticamente na primeira execução na raiz do projeto.
 
 ---
 
