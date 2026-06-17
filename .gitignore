@@ -1,10 +1,8 @@
-# Bibliotecas do ambiente virtual (não são código-fonte)
-venv/Lib/
-venv/Scripts/
-venv/Include/
-venv/share/
-venv/pyvenv.cfg
+# Ambientes virtuais Python (nunca vão pro repo)
+venv/
 .venv/
+env/
+.env/
 
 # Banco de dados (contém dados de produção)
 *.db
