@@ -1,0 +1,760 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulacao de Ocupação</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1923;
+            --bg-card: rgba(255,255,255,0.04);
+            --glass: rgba(255,255,255,0.05);
+            --glass-border: rgba(255,255,255,0.08);
+            --text: #e8edf3;
+            --text-muted: rgba(255,255,255,0.45);
+            --text-dim: rgba(255,255,255,0.3);
+            --blue: #3b82f6;
+            --blue-glow: rgba(59,130,246,.25);
+            --purple: #a855f7;
+            --green: #22c55e;
+            --yellow: #eab308;
+            --red: #ef4444;
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            color: var(--text);
+            margin: 0; padding: 0;
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed; top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,.07) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(168,85,247,.05) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(34,197,94,.04) 0%, transparent 50%);
+            z-index: -1;
+            animation: bgShift 20s ease-in-out infinite alternate;
+        }
+        @keyframes bgShift { 0% { transform: translate(0,0); } 100% { transform: translate(-5%,-3%); } }
+
+        .dash-header {
+            background: rgba(15,25,35,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 18px 0;
+            text-align: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .dash-header h1 {
+            font-size: 1.2rem; font-weight: 700; margin: 0;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,.65));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .dash-header small { color: var(--text-muted); font-size: .72rem; }
+
+        .nav-bar {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 6px 24px;
+            display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        }
+        .nav-bar a {
+            color: var(--text-muted); text-decoration: none; font-weight: 500;
+            font-size: .8rem; padding: 7px 14px; border-radius: 8px;
+            transition: all .2s; white-space: nowrap;
+        }
+        .nav-bar a:hover { background: rgba(255,255,255,.06); color: var(--text); }
+        .nav-bar a.active {
+            background: linear-gradient(135deg, var(--blue), #2563eb);
+            color: #fff; box-shadow: 0 4px 15px var(--blue-glow);
+        }
+
+        .projeto-card {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 24px 28px; margin-bottom: 24px;
+        }
+        .projeto-card h5 {
+            color: var(--text); font-weight: 700; margin-bottom: 16px;
+            border-bottom: 2px solid var(--purple); padding-bottom: 8px;
+            display: flex; align-items: center; gap: 8px;
+        }
+
+        .form-label { font-weight: 600; color: var(--text) !important; margin-bottom: 6px; }
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.05) !important;
+            border: 1px solid var(--glass-border) !important;
+            color: var(--text) !important; border-radius: 8px !important;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 0 3px rgba(168,85,247,.2) !important;
+            background: rgba(255,255,255,0.08) !important;
+        }
+        .form-control::placeholder { color: var(--text-dim) !important; }
+        .form-select option { background: #1a2332; color: var(--text); }
+
+        .btn-simular {
+            background: linear-gradient(135deg, var(--purple), #9333ea);
+            border: none; color: #fff; padding: 12px; border-radius: 8px;
+            font-weight: 600; width: 100%; cursor: pointer;
+            box-shadow: 0 4px 15px rgba(168,85,247,.3);
+        }
+        .btn-simular:hover { filter: brightness(1.1); color: #fff; }
+
+
+
+        /* Timeline visual */
+        .timeline-chart {
+            display: flex;
+            gap: 4px;
+            align-items: flex-end;
+            height: 80px;
+            padding: 8px 0;
+        }
+        .timeline-bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .timeline-bar {
+            width: 100%;
+            min-width: 20px;
+            border-radius: 4px 4px 0 0;
+            transition: height 0.3s;
+        }
+        .timeline-bar-label {
+            font-size: 0.55rem;
+            color: rgba(255,255,255,0.5);
+            transform: rotate(-45deg);
+            white-space: nowrap;
+            margin-top: 4px;
+        }
+
+        .impacto-card {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            border-radius: var(--radius);
+            padding: 24px 28px;
+            margin-bottom: 24px;
+            overflow-x: auto;
+        }
+        .impacto-card h5 { color: var(--text); border-bottom: 2px solid var(--purple); padding-bottom: 8px; }
+
+        .barra-uso {
+            height: 24px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.06);
+            overflow: hidden;
+            position: relative;
+            margin: 8px 0;
+        }
+        .barra-uso .preenchido {
+            height: 100%;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 8px;
+            color: #fff;
+            font-weight: 600;
+            font-size: .75rem;
+            transition: width .5s ease;
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: .85rem;
+            font-weight: 600;
+        }
+        .status-ok { background: rgba(34,197,94,0.2); color: #86efac; }
+        .status-atencao { background: rgba(234,179,8,0.2); color: #fde68a; }
+        .status-critico { background: rgba(239,68,68,0.2); color: #fca5a5; }
+
+        .sugestao-box {
+            background: linear-gradient(135deg, rgba(34,197,94,0.2), rgba(34,197,94,0.1));
+            border: 1px solid rgba(34,197,94,0.2);
+            color: var(--text);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        .sugestao-box h6 { margin-bottom: 12px; font-weight: 700; color: #86efac; }
+        .sugestao-box .destaque { 
+            background: rgba(255,255,255,.06);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+        }
+
+        .tabela-impacto { width: 100%; border-collapse: collapse; }
+        .tabela-impacto th {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-muted);
+            padding: 12px 14px;
+            text-align: center;
+            font-size: .78rem;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .tabela-impacto td {
+            padding: 12px 14px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            background: transparent;
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .tabela-impacto tr:hover td { background: rgba(255,255,255,0.03); }
+        .tabela-impacto .excedido { background: rgba(239,68,68,0.1) !important; }
+
+        .sim-item {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .sim-item .sim-nome { font-weight: 600; color: var(--text); font-size: .92rem; }
+        .sim-item .sim-detalhes { font-size: .85rem; color: var(--text-muted); margin-top: 4px; }
+        .sim-item .sim-m2 { font-size: 1.15rem; font-weight: 700; color: var(--purple); margin-right: 12px; white-space: nowrap; }
+
+        .acoes-container {
+            background: rgba(15,25,35,0.95);
+            backdrop-filter: blur(16px);
+            border-top: 2px solid var(--purple);
+            padding: 20px;
+            position: sticky;
+            bottom: 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,.4);
+            color: var(--text);
+        }
+        .btn-aceitar {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            border: none; color: #fff; padding: 12px 32px; border-radius: 8px; font-weight: 600;
+            box-shadow: 0 4px 12px rgba(34,197,94,.3);
+        }
+        .btn-aceitar:hover { filter: brightness(1.1); color: #fff; }
+        .btn-cancelar {
+            background: var(--red); border: none; color: #fff; padding: 12px 32px; border-radius: 8px; font-weight: 600;
+        }
+        .btn-cancelar:hover { background: #dc2626; color: #fff; }
+
+        /* Alerts dark theme */
+        .alert { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #fca5a5; border-radius: var(--radius-sm); }
+        .alert-success { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color: #86efac; }
+        .alert-warning { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.2); color: #fde68a; }
+        .alert-info { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); color: #93c5fd; }
+        .alert-danger { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
+
+        /* Tables dark */
+        .table { color: var(--text); --bs-table-bg: transparent; }
+        .table th { background: rgba(255,255,255,0.06) !important; color: var(--text-muted); border-color: var(--glass-border) !important; }
+        .table td { border-color: rgba(255,255,255,0.04) !important; color: var(--text); }
+        .table-hover > tbody > tr:hover > * { background: rgba(255,255,255,0.04) !important; color: var(--text); }
+        .table-light th { background: rgba(255,255,255,0.06) !important; color: var(--text-muted) !important; }
+        .text-muted { color: var(--text-dim) !important; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="dash-header">
+    <h1><i class="bi bi-lightning-charge"></i> Simulacao de Ocupação</h1>
+    <small>Simule novos projetos e veja o impacto na capacidade antes de confirmar</small>
+</div>
+
+<!-- NAV BAR -->
+<div class="nav-bar">
+    <a href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="/rotas"><i class="bi bi-diagram-3"></i> Projetos e Rotas</a>
+    <a href="/simulacao" class="active"><i class="bi bi-lightning-charge"></i> Simulação</a>
+    <a href="/auditoria"><i class="bi bi-shield-exclamation"></i> Auditoria</a>
+    <a href="/excel"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+    <a href="/pdf"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+</div>
+
+<div class="container-fluid" style="max-width: 1600px; margin: 0 auto; padding: 24px 32px;">
+
+<!-- ALERTAS -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-dismissible fade show" role="alert" style="border-radius: 8px;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<div class="row g-4">
+    <!-- COLUNA ESQUERDA: SIMULAR NOVO PROJETO -->
+    <div class="col-xl-5 col-lg-6">
+        <div class="projeto-card">
+            <h5><i class="bi bi-plus-circle"></i> Simular Novo Projeto</h5>
+            
+            <form action="/simulacao/adicionar_projeto" method="POST" id="form_simular">
+                <div class="mb-3">
+                    <label class="form-label">Nome do Projeto (Simulacao)</label>
+                    <input type="text" name="nome_projeto" class="form-control" 
+                           placeholder="Ex: Projeto Teste - Safra 2026" required>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Rota Padrao <span style="font-weight:400; color:#999; font-size:0.85rem;">(opcional)</span></label>
+                    <select name="tipo_projeto" id="tipo_projeto_select" class="form-select">
+                        <option value="Customizado">Customizado (sem rota padrao)</option>
+                        {% for tipo in rotas_padrao.keys() %}
+                        <option value="{{ tipo }}">{{ tipo }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="row">
+                    <div class="col-6 mb-3">
+                        <label class="form-label">Estufa Padrao</label>
+                        <select name="estufa" id="estufa_select" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            {% for e in estufas %}
+                            <option value="{{ e }}">{{ e }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <label class="form-label">Data de Inicio</label>
+                        <input type="date" name="data_inicio" id="data_inicio_input" class="form-control" required>
+                    </div>
+                </div>
+
+                <!-- Tabela de Fases -->
+                <div id="fases_container" class="mb-3">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <label class="form-label mb-0" style="color: var(--purple) !important;">Fases do Projeto</label>
+                        <button type="button" class="btn btn-sm" onclick="adicionarFase()" style="background: var(--purple); color: #fff; border: none; border-radius: 6px; padding: 4px 12px; font-size: 0.82rem;">
+                            <i class="bi bi-plus-lg"></i> Adicionar Fase
+                        </button>
+                    </div>
+                    <div style="background: rgba(255,255,255,0.03); padding: 14px; border-radius: 8px; max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0" style="font-size: 0.82rem;">
+                            <thead style="background: rgba(255,255,255,0.06); position: sticky; top: 0;">
+                                <tr>
+                                    <th style="min-width: 50px; text-align: center;">Fase</th>
+                                    <th style="min-width: 120px;">Recipiente</th>
+                                    <th style="min-width: 110px;">Estufa</th>
+                                    <th style="min-width: 90px;">Qtd</th>
+                                    <th style="min-width: 75px;">Meses</th>
+                                    <th style="min-width: 70px;" title="Meses concomitantes">Conc.</th>
+                                    <th style="min-width: 90px;">m²</th>
+                                    <th style="min-width: 45px; text-align: center;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="fases_tbody">
+                            </tbody>
+                        </table>
+                        <div id="fases_vazio" style="text-align: center; padding: 20px; color: var(--text-dim); font-size: 0.85rem;">
+                            <i class="bi bi-info-circle"></i> Selecione uma rota padrao ou adicione fases manualmente.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview de Demanda Total -->
+                <div id="preview_demanda" style="background: linear-gradient(135deg, rgba(168,85,247,0.2), rgba(168,85,247,0.1)); border: 1px solid rgba(168,85,247,0.2); color: var(--text); padding: 16px; border-radius: 8px; text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: .85rem; opacity: .7;">Demanda Total Simulada</div>
+                    <div id="demanda_total" style="font-size: 2rem; font-weight: 700;">0.00 m2</div>
+                </div>
+                
+                <button type="submit" class="btn btn-simular">
+                    <i class="bi bi-lightning-charge"></i> Simular Este Projeto
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- COLUNA DIREITA: ANALISE DE IMPACTO -->
+    <div class="col-xl-7 col-lg-6">
+        <!-- Simulacoes Pendentes -->
+        <div class="projeto-card">
+            <h5><i class="bi bi-list-check"></i> Simulacoes Pendentes ({{ simulacoes|length }})</h5>
+            
+            {% if simulacoes %}
+                {% for sim in simulacoes %}
+                <div class="sim-item">
+                    <div style="flex: 1;">
+                        <div class="sim-nome">{{ sim.nome }}</div>
+                        <div class="sim-detalhes">
+                            <i class="bi bi-building"></i> {{ sim.estufa }} | 
+                            <i class="bi bi-box"></i> {{ sim.recipiente }} | 
+                            {{ sim.quantidade }} un | {{ sim.tempo_meses }} meses
+                            {% if sim.data_inicio %} | <i class="bi bi-calendar"></i> {{ sim.data_inicio }}{% endif %}
+                        </div>
+                    </div>
+                    <div class="sim-m2">{{ "%.2f"|format(sim.demanda_m2) }} m2</div>
+                    <a href="/simulacao/remover/{{ sim.id }}" class="btn btn-sm btn-outline-danger" title="Remover">
+                        <i class="bi bi-trash"></i>
+                    </a>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align: center; padding: 30px; color: var(--text-dim);">
+                    <i class="bi bi-inbox" style="font-size: 2rem; color: var(--text-dim); display: block; margin-bottom: 10px;"></i>
+                    <p>Nenhuma simulacao pendente</p>
+                    <small style="color: var(--text-dim);">Use o formulario ao lado para simular um novo projeto</small>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Impacto na Capacidade -->
+        {% if impacto_mensal %}
+        <div class="impacto-card">
+            <h5><i class="bi bi-bar-chart-line"></i> Impacto na Capacidade por Mês</h5>
+            <p style="color: var(--text-muted); font-size: .82rem; margin-bottom: 16px;">
+                <i class="bi bi-info-circle"></i> Mostra o impacto mês a mês nos períodos em que a simulação aloca recipientes nas estufas.
+            </p>
+
+            {% set ns_meses = namespace(meses_unicos=[]) %}
+            {% for item in impacto_mensal %}
+                {% if item.periodo not in ns_meses.meses_unicos %}
+                    {% set ns_meses.meses_unicos = ns_meses.meses_unicos + [item.periodo] %}
+                {% endif %}
+            {% endfor %}
+
+            {% for periodo in ns_meses.meses_unicos %}
+            <div style="margin-bottom: 20px; background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+                    <span style="background: rgba(0,206,201,0.15); color: #00cec9; padding: 5px 16px; border-radius: 10px; font-weight: 700; font-size: 0.92rem;">
+                        <i class="bi bi-calendar3"></i> {{ periodo }}
+                    </span>
+                    {% set ns_sims = namespace(nomes=[]) %}
+                    {% for item in impacto_mensal %}
+                        {% if item.periodo == periodo and item.simulacoes_nomes %}
+                            {% for n in item.simulacoes_nomes %}
+                                {% if n not in ns_sims.nomes %}
+                                    {% set ns_sims.nomes = ns_sims.nomes + [n] %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                    {% if ns_sims.nomes %}
+                    <span style="color: #c084fc; font-size: .78rem;">
+                        <i class="bi bi-lightning-charge"></i> {{ ns_sims.nomes | join(', ') }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="table-responsive">
+                    <table class="tabela-impacto" style="font-size: 0.82rem;">
+                        <thead>
+                            <tr>
+                                <th>Estufa</th>
+                                <th>Recipiente</th>
+                                <th>Capacidade</th>
+                                <th>+Simulação</th>
+                                <th>Antes</th>
+                                <th>Depois</th>
+                                <th style="min-width: 160px;">Ocupação</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in impacto_mensal %}
+                            {% if item.periodo == periodo %}
+                            <tr class="{{ 'excedido' if item.ultrapassou else '' }}">
+                                <td><strong>{{ item.estufa }}</strong></td>
+                                <td>{{ item.recipiente }}</td>
+                                <td>{{ "%.1f"|format(item.capacidade_m2) }} m²</td>
+                                <td>
+                                    {% if item.simulacao_m2 > 0 %}
+                                    <span style="background:rgba(168,85,247,0.2); color:#a855f7; padding:3px 10px; border-radius:12px; font-size:.8rem; font-weight:600;">
+                                        +{{ "%.1f"|format(item.simulacao_m2) }} m²
+                                    </span>
+                                    {% else %}
+                                    <span style="color: var(--text-dim);">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span style="background:rgba(59,130,246,0.2); color:#60a5fa; padding:3px 10px; border-radius:12px; font-size:.8rem;">
+                                        {{ item.uso_antes }}%
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if item.ultrapassou %}
+                                    <span style="background:rgba(239,68,68,0.2); color:#f87171; padding:3px 10px; border-radius:12px; font-size:.8rem; font-weight:600;">
+                                        {{ item.uso_depois }}%
+                                    </span>
+                                    {% elif item.uso_depois >= 85 %}
+                                    <span style="background:rgba(234,179,8,0.2); color:#fde68a; padding:3px 10px; border-radius:12px; font-size:.8rem; font-weight:600;">
+                                        {{ item.uso_depois }}%
+                                    </span>
+                                    {% else %}
+                                    <span style="background:rgba(34,197,94,0.2); color:#86efac; padding:3px 10px; border-radius:12px; font-size:.8rem; font-weight:600;">
+                                        {{ item.uso_depois }}%
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="barra-uso" style="margin:0;">
+                                        {% set bar_width = [item.uso_depois, 100]|min %}
+                                        {% if item.ultrapassou %}
+                                        <div class="preenchido" style="width: {{ bar_width }}%; background: #e74c3c;">{{ item.uso_depois }}%</div>
+                                        {% elif item.uso_depois >= 85 %}
+                                        <div class="preenchido" style="width: {{ bar_width }}%; background: #f39c12;">{{ item.uso_depois }}%</div>
+                                        {% else %}
+                                        <div class="preenchido" style="width: {{ bar_width }}%; background: #00b894;">{{ item.uso_depois }}%</div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if item.ultrapassou %}
+                                    <span class="status-badge status-critico"><i class="bi bi-exclamation-triangle"></i> EXCEDE</span>
+                                    {% elif item.uso_depois >= 85 %}
+                                    <span class="status-badge status-atencao"><i class="bi bi-exclamation-circle"></i> Crítico</span>
+                                    {% elif item.simulacao_m2 > 0 %}
+                                    <span class="status-badge status-ok"><i class="bi bi-check-circle"></i> OK</span>
+                                    {% else %}
+                                    <span style="color: var(--text-dim);">—</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Sugestao de Melhor Cenario -->
+            {% set ns = namespace(melhor_estufa=None, menor_uso=999) %}
+            {% for item in impacto %}
+                {% if item.uso_depois < ns.menor_uso and not item.ultrapassou %}
+                    {% set ns.menor_uso = item.uso_depois %}
+                    {% set ns.melhor_estufa = item.estufa ~ ' - ' ~ item.recipiente %}
+                {% endif %}
+            {% endfor %}
+            
+            {% if ns.melhor_estufa %}
+            <div class="sugestao-box" style="margin-top: 20px;">
+                <h6><i class="bi bi-lightbulb"></i> Melhor Cenário Identificado</h6>
+                <p style="margin: 0;">Com base na análise de impacto mensal, a melhor opção para inserir a demanda é:</p>
+                <div class="destaque">
+                    <strong style="font-size: 1.2rem;">{{ ns.melhor_estufa }}</strong>
+                    <br><small>Ocupação projetada (pior mês): {{ ns.menor_uso }}%</small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+
+    </div>
+</div>
+</div>
+
+<!-- BARRA DE ACOES FIXA -->
+{% if simulacoes %}
+<div class="acoes-container">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning-charge text-warning"></i>
+                    {{ simulacoes|length }} simulacao(oes) pendente(s)
+                </h5>
+                <small style="color: var(--text-dim);">Escolha aceitar para adicionar ao sistema ou cancelar para descartar</small>
+            </div>
+            <div class="col-md-6 text-end">
+                <a href="/simulacao/cancelar" class="btn btn-cancelar me-2"
+                   onclick="return confirm('Tem certeza que deseja cancelar TODAS as simulacoes?')">
+                    <i class="bi bi-x-lg"></i> Cancelar Tudo
+                </a>
+                <form action="/simulacao/aceitar" method="POST" class="d-inline"
+                      onsubmit="return confirm('Confirma? Isso ira CRIAR os projetos no sistema!')">
+                    <button type="submit" class="btn btn-aceitar">
+                        <i class="bi bi-check-lg"></i> Aceitar e Criar Projetos
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Dados das rotas padrao
+    var rotasPadrao = {
+        {% for tipo, rotas in rotas_padrao.items() %}
+        "{{ tipo }}": [
+            {% for r, m, q, c in rotas %}
+            {"recipiente": "{{ r }}", "meses": {{ m }}, "quantidade": {{ q }}, "concomitante": {{ c }}},
+            {% endfor %}
+        ],
+        {% endfor %}
+    };
+
+    var tamanhos = {
+        "Bandeja": 0.16,
+        "Citropote": 0.02,
+        "Vaso": 0.3
+    };
+
+    var estufas = [{% for e in estufas %}"{{ e }}"{% if not loop.last %}, {% endif %}{% endfor %}];
+
+    var faseCount = 0;
+
+    function calcularM2(quantidade, recipiente) {
+        return quantidade * (tamanhos[recipiente] || 0);
+    }
+
+    function atualizarDemandaTotal() {
+        var total = 0;
+        var rows = document.querySelectorAll('#fases_tbody tr');
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            var qtdInput = row.querySelector('input[name$="_quantidade"]');
+            var recipienteSelect = row.querySelector('select[name$="_recipiente"]');
+            if (qtdInput && recipienteSelect) {
+                var qtd = parseInt(qtdInput.value) || 0;
+                var recipiente = recipienteSelect.value;
+                total += calcularM2(qtd, recipiente);
+            }
+        }
+        document.getElementById('demanda_total').textContent = total.toFixed(2) + ' m2';
+    }
+
+    function atualizarM2Fase(idx) {
+        var qtdInput = document.querySelector('input[name="fase_' + idx + '_quantidade"]');
+        var recipienteSelect = document.querySelector('select[name="fase_' + idx + '_recipiente"]');
+        var m2Span = document.getElementById('fase_' + idx + '_m2');
+        
+        if (qtdInput && recipienteSelect && m2Span) {
+            var qtd = parseInt(qtdInput.value) || 0;
+            var recipiente = recipienteSelect.value;
+            var m2 = calcularM2(qtd, recipiente);
+            m2Span.textContent = m2.toFixed(2) + ' m2';
+        }
+        atualizarDemandaTotal();
+    }
+
+    function adicionarFase(recipiente, meses, quantidade, concomitante) {
+        recipiente = recipiente || 'Bandeja';
+        meses = meses || 3;
+        quantidade = quantidade || 100;
+        concomitante = concomitante || 0;
+        
+        document.getElementById('fases_vazio').style.display = 'none';
+        var tbody = document.getElementById('fases_tbody');
+        var idx = faseCount++;
+        var m2 = calcularM2(quantidade, recipiente);
+
+        var tr = document.createElement('tr');
+        tr.id = 'fase_row_' + idx;
+        
+        var estufaOptions = '<option value="">Padrao</option>';
+        for (var i = 0; i < estufas.length; i++) {
+            estufaOptions += '<option value="' + estufas[i] + '">' + estufas[i] + '</option>';
+        }
+        
+        tr.innerHTML = 
+            '<td style="font-weight: 600; color: #a855f7; vertical-align: middle;">' + (idx + 1) + '</td>' +
+            '<td>' +
+                '<select name="fase_' + idx + '_recipiente" class="form-select form-select-sm" onchange="atualizarM2Fase(' + idx + ')">' +
+                    '<option value="Bandeja"' + (recipiente === 'Bandeja' ? ' selected' : '') + '>Bandeja</option>' +
+                    '<option value="Citropote"' + (recipiente === 'Citropote' ? ' selected' : '') + '>Citropote</option>' +
+                    '<option value="Vaso"' + (recipiente === 'Vaso' ? ' selected' : '') + '>Vaso</option>' +
+                '</select>' +
+            '</td>' +
+            '<td>' +
+                '<select name="fase_' + idx + '_estufa" class="form-select form-select-sm">' +
+                    estufaOptions +
+                '</select>' +
+            '</td>' +
+            '<td>' +
+                '<input type="number" name="fase_' + idx + '_quantidade" class="form-control form-control-sm" ' +
+                       'value="' + quantidade + '" min="1" onchange="atualizarM2Fase(' + idx + ')" oninput="atualizarM2Fase(' + idx + ')">' +
+            '</td>' +
+            '<td>' +
+                '<input type="number" name="fase_' + idx + '_meses" class="form-control form-control-sm" ' +
+                       'value="' + meses + '" min="1" max="60">' +
+            '</td>' +
+            '<td>' +
+                '<input type="number" name="fase_' + idx + '_concomitante" class="form-control form-control-sm" ' +
+                       'value="' + concomitante + '" min="0" max="24" title="Meses concomitantes">' +
+            '</td>' +
+            '<td style="color: #a855f7; font-weight: 600; vertical-align: middle;">' +
+                '<span id="fase_' + idx + '_m2">' + m2.toFixed(2) + ' m2</span>' +
+            '</td>' +
+            '<td style="text-align: center; vertical-align: middle;">' +
+                '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removerFase(' + idx + ')" style="padding:2px 6px;">' +
+                    '<i class="bi bi-trash"></i>' +
+                '</button>' +
+            '</td>';
+        tbody.appendChild(tr);
+        atualizarDemandaTotal();
+    }
+
+    function removerFase(idx) {
+        var row = document.getElementById('fase_row_' + idx);
+        if (row) row.remove();
+        
+        if (document.querySelectorAll('#fases_tbody tr').length === 0) {
+            document.getElementById('fases_vazio').style.display = 'block';
+        }
+        atualizarDemandaTotal();
+    }
+
+    function carregarRotaPadrao() {
+        var tipo = document.getElementById('tipo_projeto_select').value;
+        var tbody = document.getElementById('fases_tbody');
+        
+        tbody.innerHTML = '';
+        faseCount = 0;
+        
+        if (tipo && tipo !== 'Customizado' && rotasPadrao[tipo]) {
+            document.getElementById('fases_vazio').style.display = 'none';
+            var fases = rotasPadrao[tipo];
+            for (var i = 0; i < fases.length; i++) {
+                var fase = fases[i];
+                adicionarFase(fase.recipiente, fase.meses, fase.quantidade, fase.concomitante);
+            }
+        } else {
+            document.getElementById('fases_vazio').style.display = 'block';
+            document.getElementById('demanda_total').textContent = '0.00 m2';
+        }
+    }
+
+    document.getElementById('tipo_projeto_select').addEventListener('change', carregarRotaPadrao);
+
+    var hoje = new Date().toISOString().split('T')[0];
+    document.getElementById('data_inicio_input').value = hoje;
+
+
+</script>
+</body>
+</html>

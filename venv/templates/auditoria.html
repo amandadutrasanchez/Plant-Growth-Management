@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Auditoria – Gerenciamento de Ocupação das Estufas</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1923;
+            --bg-card: rgba(255,255,255,0.04);
+            --glass: rgba(255,255,255,0.05);
+            --glass-border: rgba(255,255,255,0.08);
+            --text: #e8edf3;
+            --text-muted: rgba(255,255,255,0.45);
+            --text-dim: rgba(255,255,255,0.3);
+            --blue: #3b82f6;
+            --blue-glow: rgba(59,130,246,.25);
+            --purple: #a855f7;
+            --purple-glow: rgba(168,85,247,.25);
+            --green: #22c55e;
+            --yellow: #eab308;
+            --red: #ef4444;
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(239,68,68,.07) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(234,179,8,.05) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(59,130,246,.04) 0%, transparent 50%);
+            z-index: -1;
+            animation: bgShift 20s ease-in-out infinite alternate;
+        }
+        @keyframes bgShift {
+            0% { transform: translate(0,0); }
+            100% { transform: translate(-5%,-3%); }
+        }
+
+        /* ===== HEADER ===== */
+        .dash-header {
+            background: rgba(15,25,35,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 18px 0;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .dash-header h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,.65));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .dash-header small {
+            color: var(--text-muted);
+            font-size: .72rem;
+        }
+
+        /* ===== NAV ===== */
+        .nav-bar {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 6px 24px;
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            overflow-x: auto;
+        }
+        .nav-bar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: .8rem;
+            padding: 7px 14px;
+            border-radius: 8px;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+        .nav-bar a:hover { background: rgba(255,255,255,.06); color: var(--text); }
+        .nav-bar a.active {
+            background: linear-gradient(135deg, var(--red), #dc2626);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(239,68,68,.25);
+        }
+
+        /* ===== FILTROS ===== */
+        .filtros-box {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 14px 18px;
+            margin-bottom: 24px;
+        }
+        .filtros-box label {
+            color: var(--text-dim);
+            font-size: .65rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            font-weight: 600;
+        }
+        .filtros-box .form-select {
+            background: rgba(255,255,255,.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            font-size: .8rem;
+            border-radius: 8px;
+        }
+        .filtros-box .form-select option { background: #1a2332; color: var(--text); }
+        .filtros-box .btn-primary {
+            background: linear-gradient(135deg, var(--red), #dc2626);
+            border: none;
+            font-weight: 600;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(239,68,68,.25);
+        }
+
+        /* ===== CARDS RESUMO ===== */
+        .audit-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .audit-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+        }
+        .audit-card .card-icon {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+        .audit-card .card-val {
+            font-size: 2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .audit-card .card-lbl {
+            font-size: .72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-top: 4px;
+        }
+        .card-danger .card-icon, .card-danger .card-val { color: var(--red); }
+        .card-warning .card-icon, .card-warning .card-val { color: var(--yellow); }
+        .card-info .card-icon, .card-info .card-val { color: var(--blue); }
+
+        /* ===== SEC HEADER ===== */
+        .sec-hdr {
+            font-size: .85rem;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sec-hdr i { color: var(--red); font-size: 1rem; }
+
+        /* ===== TABELA ===== */
+        .audit-table-wrap {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+        .audit-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .82rem;
+        }
+        .audit-table thead th {
+            background: rgba(239,68,68,0.08);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: .68rem;
+            letter-spacing: .5px;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--glass-border);
+            white-space: nowrap;
+        }
+        .audit-table tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background .15s;
+        }
+        .audit-table tbody tr:hover { background: rgba(239,68,68,0.04); }
+        .audit-table td {
+            padding: 12px 14px;
+            vertical-align: top;
+        }
+
+        /* badges */
+        .badge-est {
+            background: linear-gradient(135deg, rgba(59,130,246,.15), rgba(59,130,246,.08));
+            color: #60a5fa;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 600;
+            border: 1px solid rgba(59,130,246,.2);
+        }
+        .badge-rec {
+            background: linear-gradient(135deg, rgba(168,85,247,.15), rgba(168,85,247,.08));
+            color: #c084fc;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 600;
+            border: 1px solid rgba(168,85,247,.2);
+        }
+        .badge-exc {
+            background: rgba(239,68,68,0.15);
+            color: #f87171;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: .72rem;
+            font-weight: 700;
+            border: 1px solid rgba(239,68,68,0.25);
+        }
+        .badge-uso {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: .72rem;
+            font-weight: 700;
+            border: 1px solid;
+        }
+        .badge-uso.crit {
+            background: rgba(239,68,68,0.15);
+            color: #f87171;
+            border-color: rgba(239,68,68,0.25);
+        }
+        .badge-uso.warn {
+            background: rgba(234,179,8,0.15);
+            color: #fbbf24;
+            border-color: rgba(234,179,8,0.25);
+        }
+
+        /* barra excesso */
+        .exc-bar-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .exc-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 3px;
+            overflow: hidden;
+            min-width: 60px;
+        }
+        .exc-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, var(--yellow), var(--red));
+        }
+
+        /* projetos */
+        .proj-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .proj-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            padding: 4px 10px;
+            gap: 12px;
+        }
+        .proj-item .proj-name {
+            font-weight: 500;
+            color: var(--text);
+            font-size: .78rem;
+        }
+        .proj-item .proj-dem {
+            color: #f87171;
+            font-weight: 600;
+            font-size: .75rem;
+            white-space: nowrap;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+        }
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--green);
+            margin-bottom: 12px;
+        }
+        .empty-state h4 {
+            color: var(--green);
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .empty-state p {
+            color: var(--text-muted);
+            font-size: .85rem;
+        }
+
+        /* ===== PERÍODO HEADER ===== */
+        .periodo-header {
+            background: rgba(239,68,68,0.06);
+            border: 1px solid rgba(239,68,68,0.12);
+            border-radius: var(--radius);
+            padding: 12px 18px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .periodo-header .periodo-title {
+            font-weight: 700;
+            font-size: .95rem;
+            color: var(--text);
+        }
+        .periodo-header .periodo-title i { color: var(--red); }
+        .periodo-header .periodo-stats {
+            display: flex;
+            gap: 16px;
+        }
+        .periodo-header .periodo-stat {
+            text-align: center;
+        }
+        .periodo-header .periodo-stat .val {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--red);
+        }
+        .periodo-header .periodo-stat .lbl {
+            font-size: .62rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        /* animations */
+        .fu {
+            animation: fadeUp .5s ease-out both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="dash-header">
+    <h1><i class="bi bi-shield-exclamation"></i> Auditoria de Ocupação</h1>
+    <small>Meses acima da capacidade · Detalhamento por recipiente, estufa e projeto</small>
+</div>
+
+<!-- NAV -->
+<div class="nav-bar">
+    <a href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="/rotas"><i class="bi bi-diagram-3"></i> Projetos & Rotas</a>
+    <a href="/simulacao"><i class="bi bi-lightning-charge"></i> Simulação</a>
+    <a href="/auditoria" class="active"><i class="bi bi-shield-exclamation"></i> Auditoria</a>
+</div>
+
+<div class="container-fluid px-4 pt-3">
+
+<!-- CARDS RESUMO -->
+<div class="audit-cards fu">
+    <div class="audit-card card-danger">
+        <div class="card-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+        <div class="card-val">{{ total_alertas }}</div>
+        <div class="card-lbl">Ocorrências Acima</div>
+    </div>
+    <div class="audit-card card-warning">
+        <div class="card-icon"><i class="bi bi-calendar-x-fill"></i></div>
+        <div class="card-val">{{ meses_criticos }}</div>
+        <div class="card-lbl">Meses Críticos</div>
+    </div>
+    <div class="audit-card card-danger">
+        <div class="card-icon"><i class="bi bi-arrows-fullscreen"></i></div>
+        <div class="card-val">{{ "%.1f"|format(total_excesso_m2) }}</div>
+        <div class="card-lbl">Excesso Total (m²)</div>
+    </div>
+</div>
+
+<!-- FILTROS -->
+<div class="filtros-box fu">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label">Ano</label>
+            <select name="ano" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for a in anos %}
+                <option value="{{ a }}" {% if request.args.get('ano', '')|int == a %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Estufa</label>
+            <select name="estufa" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for e in estufas %}
+                <option value="{{ e }}" {% if request.args.get('estufa') == e %}selected{% endif %}>{{ e }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Recipiente</label>
+            <select name="recipiente" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for r in recipientes %}
+                <option value="{{ r }}" {% if request.args.get('recipiente') == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-1 align-items-end">
+            <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                <i class="bi bi-funnel-fill"></i> Filtrar
+            </button>
+            <a href="/auditoria" class="btn btn-outline-light btn-sm flex-fill">
+                <i class="bi bi-x-circle"></i> Limpar
+            </a>
+        </div>
+    </form>
+</div>
+
+{% if alertas | length == 0 %}
+<!-- ESTADO VAZIO -->
+<div class="empty-state fu">
+    <i class="bi bi-check-circle-fill"></i>
+    <h4>Nenhuma ocorrência acima da capacidade</h4>
+    <p>Todos os meses estão dentro dos limites de ocupação das estufas. Excelente!</p>
+</div>
+
+{% else %}
+
+<!-- TABELA DE ALERTAS -->
+<div class="sec-hdr fu"><i class="bi bi-shield-exclamation"></i> Ocorrências Acima da Capacidade (ordenadas por maior excesso)</div>
+
+<div class="audit-table-wrap fu">
+    <table class="audit-table" id="tabela-auditoria">
+        <thead>
+            <tr>
+                <th>Período</th>
+                <th>Estufa</th>
+                <th>Recipiente</th>
+                <th>Capacidade</th>
+                <th>Demanda</th>
+                <th>Excesso</th>
+                <th>Uso</th>
+                <th>Projetos Responsáveis</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for a in alertas %}
+            <tr>
+                <td>
+                    <strong style="font-size:.95rem;">{{ a.periodo }}</strong>
+                </td>
+                <td><span class="badge-est">{{ a.estufa }}</span></td>
+                <td><span class="badge-rec">{{ a.recipiente }}
+                    {% if a.compartilhado_com %}
+                    <i class="bi bi-link-45deg" title="Compartilha mesas com {{ a.compartilhado_com }}"></i>
+                    {% endif %}
+                </span></td>
+                <td style="color: #60a5fa; font-weight: 600;">{{ "%.1f"|format(a.capacidade) }} m²</td>
+                <td>
+                    <div style="display:flex; flex-direction:column; gap:2px;">
+                        <span style="color: #fbbf24; font-weight: 600;">{{ "%.1f"|format(a.demanda) }} m²</span>
+                        {% if a.compartilhado_com %}
+                        <span style="color: var(--text-dim); font-size:.68rem;">Grupo: {{ "%.1f"|format(a.demanda_grupo) }} m²</span>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    <div class="exc-bar-wrap">
+                        <span class="badge-exc">+{{ "%.1f"|format(a.excesso) }} m²</span>
+                        <div class="exc-bar">
+                            {% set pct = [((a.excesso / a.capacidade) * 100), 100] | min if a.capacidade > 0 else 0 %}
+                            <div class="exc-bar-fill" style="width: {{ pct }}%;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge-uso {% if a.uso >= 120 %}crit{% else %}warn{% endif %}">
+                        {{ a.uso }}%
+                    </span>
+                </td>
+                <td>
+                    <div class="proj-list">
+                        {% for p in a.projetos %}
+                        <div class="proj-item">
+                            <span class="proj-name">{{ p.nome }}</span>
+                            <span class="proj-dem">
+                                <i class="bi bi-box" style="color:var(--text-dim)"></i> {{ "{:,}".format(p.demanda_un) }} un.
+                                · <i class="bi bi-rulers" style="color:#f87171"></i> {{ "%.1f"|format(p.demanda_m2) }} m²
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- RESUMO POR ESTUFA -->
+<div class="row g-4 mb-4 fu">
+    {% set estufas_excesso = {} %}
+    {% for a in alertas %}
+        {% if a.estufa not in estufas_excesso %}
+            {% set _ = estufas_excesso.update({a.estufa: {'count': 0, 'excesso': 0}}) %}
+        {% endif %}
+        {% set _ = estufas_excesso[a.estufa].update({'count': estufas_excesso[a.estufa]['count'] + 1, 'excesso': estufas_excesso[a.estufa]['excesso'] + a.excesso}) %}
+    {% endfor %}
+    {% for est, dados in estufas_excesso.items() %}
+    <div class="col-12 col-md-6">
+        <div class="periodo-header">
+            <div class="periodo-title">
+                <i class="bi bi-building-fill"></i> {{ est }}
+            </div>
+            <div class="periodo-stats">
+                <div class="periodo-stat">
+                    <div class="val">{{ dados.count }}</div>
+                    <div class="lbl">Ocorrências</div>
+                </div>
+                <div class="periodo-stat">
+                    <div class="val">{{ "%.1f"|format(dados.excesso) }}</div>
+                    <div class="lbl">Excesso Total (m²)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

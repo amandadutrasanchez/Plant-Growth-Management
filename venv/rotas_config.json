@@ -1,0 +1,366 @@
+{
+  "Fast Track - 3445 2g": {
+    "tipo": "Fast Track",
+    "fases": [
+      {
+        "recipiente": "Vaso",
+        "meses": 6,
+        "quantidade": 2000,
+        "concomitante": 0,
+        "fase": 1
+      },
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 12240,
+        "concomitante": 3,
+        "fase": 2
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 650,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  "Fast Track - 2519 2g": {
+    "tipo": "Fast Track",
+    "fases": [
+      {
+        "recipiente": "Vaso",
+        "meses": 6,
+        "quantidade": 2000,
+        "concomitante": 0,
+        "fase": 1
+      },
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 12240,
+        "concomitante": 3,
+        "fase": 2
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 650,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  "Fast Track - 2851 2g": {
+    "tipo": "Fast Track",
+    "fases": [
+      {
+        "recipiente": "Vaso",
+        "meses": 6,
+        "quantidade": 2000,
+        "concomitante": 0,
+        "fase": 1
+      },
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 12240,
+        "concomitante": 3,
+        "fase": 2
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 650,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  "Fast Track - 9008 2g": {
+    "tipo": "Fast Track",
+    "fases": [
+      {
+        "recipiente": "Vaso",
+        "meses": 6,
+        "quantidade": 2000,
+        "concomitante": 0,
+        "fase": 1
+      },
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 12240,
+        "concomitante": 3,
+        "fase": 2
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 650,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  "Pipeline GM - 2519 2g": {
+    "tipo": "Pipeline GM",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 900,
+        "concomitante": 3,
+        "fase": 1
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 1170,
+        "concomitante": 0,
+        "fase": 2
+      },
+      {
+        "recipiente": "Vaso",
+        "meses": 10,
+        "quantidade": 1000,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  "Pipeline GM - 2851 2g": {
+    "tipo": "Pipeline GM",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 900,
+        "concomitante": 3,
+        "fase": 1
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 1170,
+        "concomitante": 0,
+        "fase": 2
+      },
+      {
+        "recipiente": "Vaso",
+        "meses": 10,
+        "quantidade": 1000,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  "Pipeline GM - FwB Genitor 1,2,3 e 4": {
+    "tipo": "Pipeline GM",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 900,
+        "concomitante": 3,
+        "fase": 1
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 1170,
+        "concomitante": 0,
+        "fase": 2
+      },
+      {
+        "recipiente": "Vaso",
+        "meses": 10,
+        "quantidade": 1000,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  "Pipeline GM - Projeto 1": {
+    "tipo": "Pipeline GM",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 900,
+        "concomitante": 3,
+        "fase": 1
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 1170,
+        "concomitante": 0,
+        "fase": 2
+      },
+      {
+        "recipiente": "Vaso",
+        "meses": 10,
+        "quantidade": 1000,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  "Pipeline GM - Projeto 2": {
+    "tipo": "Pipeline GM",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 900,
+        "concomitante": 3,
+        "fase": 1
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 1170,
+        "concomitante": 0,
+        "fase": 2
+      },
+      {
+        "recipiente": "Vaso",
+        "meses": 10,
+        "quantidade": 1000,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  " PoT VI": {
+    "tipo": " PoT",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 1250,
+        "concomitante": 3,
+        "fase": 1
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 625,
+        "concomitante": 0,
+        "fase": 2
+      }
+    ]
+  },
+  " PoT VI (fase 2)": {
+    "tipo": " PoT",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 1250,
+        "concomitante": 3,
+        "fase": 1
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 625,
+        "concomitante": 0,
+        "fase": 2
+      }
+    ]
+  },
+  " PoT VI (fase 3)": {
+    "tipo": " PoT",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 1250,
+        "concomitante": 3,
+        "fase": 1
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 625,
+        "concomitante": 0,
+        "fase": 2
+      }
+    ]
+  },
+  "Produção MGC 1": {
+    "tipo": "Produção MGC",
+    "fases": [
+      {
+        "recipiente": "Bandeja",
+        "meses": 4,
+        "quantidade": 150,
+        "concomitante": 0,
+        "fase": 1
+      }
+    ]
+  },
+  "Produção MGC 2": {
+    "tipo": "Produção MGC",
+    "fases": [
+      {
+        "recipiente": "Bandeja",
+        "meses": 4,
+        "quantidade": 150,
+        "concomitante": 0,
+        "fase": 1
+      }
+    ]
+  },
+  "PROD PALMITO": {
+    "tipo": "PROD PALMITO",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 7560,
+        "concomitante": 0,
+        "fase": 1
+      }
+    ]
+  },
+  "Pipeline GM - 2994 HT": {
+    "tipo": "Pipeline GM",
+    "fases": [
+      {
+        "recipiente": "Citropote",
+        "meses": 6,
+        "quantidade": 900,
+        "concomitante": 3,
+        "fase": 1
+      },
+      {
+        "recipiente": "Bandeja",
+        "meses": 3,
+        "quantidade": 1170,
+        "concomitante": 0,
+        "fase": 2
+      },
+      {
+        "recipiente": "Vaso",
+        "meses": 10,
+        "quantidade": 1000,
+        "concomitante": 0,
+        "fase": 3
+      }
+    ]
+  },
+  "Coletas REG": {
+    "tipo": "Coletas REG",
+    "fases": [
+      {
+        "recipiente": "Vaso",
+        "meses": 12,
+        "quantidade": 912,
+        "fase": 1
+      }
+    ]
+  }
+}

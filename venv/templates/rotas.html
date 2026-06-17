@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Configurar Rotas – Gerenciamento de Ocupação das Estufas</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1923;
+            --bg-card: rgba(255,255,255,0.04);
+            --glass: rgba(255,255,255,0.05);
+            --glass-border: rgba(255,255,255,0.08);
+            --text: #e8edf3;
+            --text-muted: rgba(255,255,255,0.45);
+            --text-dim: rgba(255,255,255,0.3);
+            --blue: #3b82f6;
+            --blue-glow: rgba(59,130,246,.25);
+            --purple: #a855f7;
+            --green: #22c55e;
+            --yellow: #eab308;
+            --red: #ef4444;
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+        * { box-sizing: border-box; }
+        body {
+            background: var(--bg);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            color: var(--text);
+            margin: 0; padding: 0;
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed; top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,.07) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(168,85,247,.05) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(34,197,94,.04) 0%, transparent 50%);
+            z-index: -1;
+            animation: bgShift 20s ease-in-out infinite alternate;
+        }
+        @keyframes bgShift { 0% { transform: translate(0,0); } 100% { transform: translate(-5%,-3%); } }
+
+        .dash-header {
+            background: rgba(15,25,35,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 18px 0;
+            text-align: center;
+            position: sticky; top: 0; z-index: 100;
+        }
+        .dash-header h1 {
+            font-size: 1.2rem; font-weight: 700; margin: 0;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,.65));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .dash-header small { color: var(--text-muted); font-size: .72rem; }
+
+        .nav-bar {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 6px 24px;
+            display: flex; gap: 4px; align-items: center; overflow-x: auto;
+        }
+        .nav-bar a {
+            color: var(--text-muted); text-decoration: none; font-weight: 500;
+            font-size: .8rem; padding: 7px 14px; border-radius: 8px;
+            transition: all .2s; white-space: nowrap;
+        }
+        .nav-bar a:hover { background: rgba(255,255,255,.06); color: var(--text); }
+        .nav-bar a.active {
+            background: linear-gradient(135deg, var(--blue), #2563eb);
+            color: #fff; box-shadow: 0 4px 15px var(--blue-glow);
+        }
+
+        .projeto-card {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 22px; margin-bottom: 20px;
+        }
+        .projeto-card h5 {
+            color: var(--text); font-weight: 700; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px; font-size: 1.05rem;
+        }
+        .projeto-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .projeto-nome { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+        .projeto-meta { display: flex; gap: 16px; font-size: .82rem; color: var(--text-muted); }
+        .projeto-meta span { display: flex; align-items: center; gap: 4px; }
+
+        .fase-row {
+            display: flex; align-items: center; gap: 16px; padding: 12px;
+            background: rgba(255,255,255,0.03); border-radius: 8px; margin-bottom: 8px;
+        }
+        .fase-num {
+            background: var(--purple); color: #fff; width: 32px; height: 32px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: .85rem;
+        }
+        .fase-field { flex: 1; }
+        .fase-field label {
+            font-size: .72rem; text-transform: uppercase; color: var(--text-dim);
+            margin-bottom: 2px; display: block;
+        }
+        .fase-field input, .fase-field select {
+            width: 100%; padding: 6px 10px;
+            background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+            border-radius: 6px; font-size: .9rem; color: var(--text);
+        }
+        .fase-field input:focus, .fase-field select:focus {
+            border-color: var(--purple); outline: none;
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, .2);
+        }
+        .fase-arrow { color: var(--purple); font-size: 1.2rem; }
+
+        .especial-badge {
+            background: rgba(234,179,8,0.2); color: #fde68a;
+            padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 600;
+        }
+        .btn-salvar {
+            background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff;
+            border: none; padding: 12px 40px; border-radius: 8px; font-weight: 600; font-size: 1rem;
+        }
+        .btn-salvar:hover { filter: brightness(1.1); color: #fff; }
+        .btn-resetar {
+            background: var(--red); color: #fff; border: none;
+            padding: 6px 14px; border-radius: 6px; font-size: .78rem; font-weight: 500;
+        }
+        .btn-resetar:hover { background: #dc2626; color: #fff; }
+
+        .alert-custom { border-radius: var(--radius-sm); padding: 14px 20px; margin-bottom: 20px; }
+        .alert { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #fca5a5; border-radius: var(--radius-sm); }
+        .alert-success { background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.2); color: #86efac; }
+        .alert-warning { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.2); color: #fde68a; }
+        .alert-info { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.2); color: #93c5fd; }
+        .alert-danger { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.2); color: #fca5a5; }
+
+        .info-box {
+            background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.15);
+            border-radius: var(--radius-sm); padding: 16px; margin-bottom: 20px;
+        }
+        .info-box h5 { color: #93c5fd; margin-bottom: 8px; }
+        .info-box p { color: #93c5fd; margin: 0; font-size: .9rem; }
+
+        /* Form controls (dark) */
+        .form-control, .form-select {
+            background: rgba(255,255,255,0.05) !important;
+            border: 1px solid var(--glass-border) !important;
+            color: var(--text) !important; border-radius: 8px !important;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--purple) !important;
+            box-shadow: 0 0 0 3px rgba(168,85,247,.2) !important;
+            background: rgba(255,255,255,0.08) !important;
+        }
+        .form-control::placeholder { color: var(--text-dim) !important; }
+        .form-select option { background: #1a2332; color: var(--text); }
+        label { color: var(--text-muted) !important; }
+        .form-label { color: var(--text) !important; font-weight: 600; }
+
+        /* Table inside cards */
+        .table { color: var(--text); --bs-table-bg: transparent; }
+        .table th { background: rgba(255,255,255,0.06) !important; color: var(--text-muted); border-color: var(--glass-border) !important; }
+        .table td { border-color: rgba(255,255,255,0.04) !important; }
+        .table-hover > tbody > tr:hover > * { background: rgba(255,255,255,0.04) !important; color: var(--text); }
+        thead.table-light th, thead th { background: rgba(255,255,255,0.06) !important; color: var(--text-muted) !important; }
+        .table thead { --bs-table-bg: rgba(255,255,255,0.06); }
+
+        /* Modal dark */
+        .modal-content { background: #1a2332; border: 1px solid var(--glass-border); color: var(--text); }
+        .modal-header { background: var(--purple); color: #fff; border-bottom: 1px solid var(--glass-border); }
+        .modal-footer { border-top: 1px solid var(--glass-border); }
+        .btn-close-white { filter: brightness(0) invert(1); }
+
+        /* Buttons */
+        .btn-primary, .btn { color: #fff; }
+        .btn-outline-danger { color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+        .btn-outline-danger:hover { background: rgba(239,68,68,0.2); color: #fca5a5; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="dash-header">
+    <h1><i class="bi bi-diagram-3"></i> Projetos & Rotas</h1>
+    <small>Crie projetos e configure rotas de cultivo</small>
+</div>
+
+<!-- ===== NAV BAR ===== -->
+<div class="nav-bar">
+    <a href="/"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="/rotas" class="active"><i class="bi bi-diagram-3"></i> Projetos & Rotas</a>
+    <a href="/simulacao"><i class="bi bi-lightning-charge"></i> Simulação</a>
+    <a href="/auditoria"><i class="bi bi-shield-exclamation"></i> Auditoria</a>
+    <a href="/excel"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+    <a href="/pdf"><i class="bi bi-file-earmark-pdf"></i> PDF</a>
+</div>
+
+<div class="container-fluid px-4">
+
+<!-- ===== MENSAGENS FLASH ===== -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category != 'message' else 'info' }} alert-custom alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- ===== CONTAINER PRINCIPAL ===== -->
+<div class="container-fluid px-4">
+    <div class="row mb-4">
+        <!-- ===== COLUNA ESQUERDA: CRIAR PROJETO ===== -->
+        <div class="col-lg-5">
+            <div class="projeto-card">
+                <h5><i class="bi bi-plus-circle"></i> Criar Novo Projeto</h5>
+                
+                <form action="/rotas" method="POST" id="form_criar_projeto">
+                    <div style="margin-bottom: 12px;">
+                        <label class="form-label" style="display: block;">Nome do Projeto</label>
+                        <input type="text" name="nome_projeto" class="form-control" 
+                               placeholder="Ex: Tomate - Safra 2026" required>
+                    </div>
+                    
+                    <div style="margin-bottom: 12px;">
+                        <label class="form-label" style="display: block;">Rota Padrão <span style="font-weight:400; color:var(--text-dim); font-size:0.85rem;">(opcional – preenche as fases automaticamente)</span></label>
+                        <select name="tipo_projeto" id="tipo_projeto_select" class="form-control">
+                            <option value="Customizado">Customizado (sem rota padrão)</option>
+                            <option value="Pipeline GM">Pipeline GM</option>
+                            <option value="Fast Track">Fast Track</option>
+                            <option value=" PoT"> PoT</option>
+                            <option value="FwB Genitor">FwB Genitor</option>
+                            <option value="Produção MGC">Produção MGC</option>
+                            <option value="PROD PALMITO">PROD PALMITO</option>
+                        </select>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-6" style="margin-bottom: 12px;">
+                            <label class="form-label" style="display: block;">Estufa Padrão</label>
+                            <select name="estufa" class="form-control" required>
+                                <option value="">Selecione...</option>
+                                {% for e in estufas %}
+                                <option value="{{ e }}">{{ e }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6" style="margin-bottom: 12px;">
+                            <label class="form-label" style="display: block;">Data de Início</label>
+                            <input type="date" name="data_inicio" id="data_inicio_input" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de Fases Editáveis -->
+                    <div id="fases_container" style="margin-bottom: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label style="font-weight: 600; color: var(--purple); margin: 0;">📋 Fases do Projeto</label>
+                            <button type="button" class="btn btn-sm" onclick="adicionarFase()" style="background: var(--purple); color: #fff; border: none; border-radius: 6px; padding: 4px 12px; font-size: 0.82rem;">
+                                <i class="bi bi-plus-lg"></i> Adicionar Fase
+                            </button>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; max-height: 450px; overflow-y: auto;">
+                            <table class="table table-sm table-hover mb-0" style="font-size: 0.8rem;">
+                                <thead style="background: rgba(255,255,255,0.06); position: sticky; top: 0;">
+                                    <tr>
+                                        <th style="width: 4%;">Fase</th>
+                                        <th style="width: 14%;">Recipiente</th>
+                                        <th style="width: 14%;">Estufa</th>
+                                        <th style="width: 10%;">Qtd</th>
+                                        <th style="width: 15%;">Data Início</th>
+                                        <th style="width: 8%;">Meses</th>
+                                        <th style="width: 7%;" title="Meses concomitantes com a próxima fase">Conc.</th>
+                                        <th style="width: 4%; text-align: center;">🗑</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fases_tbody">
+                                </tbody>
+                            </table>
+                            <div id="fases_vazio" style="text-align: center; padding: 20px; color: var(--text-dim); font-size: 0.85rem;">
+                                <i class="bi bi-info-circle"></i> Selecione uma rota padrão ou adicione fases manualmente.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="btn_criar" style="background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: 600; width: 100%; cursor: pointer; transition: all .2s; box-shadow: 0 4px 12px rgba(34,197,94,.3);">
+                        <i class="bi bi-plus-lg"></i> Criar Projeto
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ===== COLUNA DIREITA: PROJETOS ATIVOS ===== -->
+        <div class="col-lg-7">
+            <div class="projeto-card">
+                <h5><i class="bi bi-list-check"></i> Projetos Ativos (<span id="projetos_count">{{ projetos_ativos|length }}</span>)</h5>
+                
+                <!-- ===== BARRA DE PESQUISA E FILTROS ===== -->
+                <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
+                    <div style="flex: 1; min-width: 200px; position: relative;">
+                        <i class="bi bi-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); font-size: 0.85rem;"></i>
+                        <input type="text" id="pesquisa_projeto" class="form-control" 
+                               placeholder="Pesquisar projeto..." 
+                               oninput="filtrarProjetos()"
+                               style="padding-left: 36px; font-size: 0.88rem;">
+                    </div>
+                    <div style="min-width: 120px;">
+                        <select id="filtro_ano" class="form-select" onchange="filtrarProjetos()" style="font-size: 0.88rem;">
+                            <option value="">Todos os anos</option>
+                            {% set anos = [] %}
+                            {% for proj in projetos_ativos %}
+                                {% if proj.data_inicio %}
+                                    {% set ano = proj.data_inicio[:4] %}
+                                    {% if ano not in anos %}
+                                        {% if anos.append(ano) %}{% endif %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            {% for ano in anos|sort(reverse=true) %}
+                            <option value="{{ ano }}">{{ ano }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="min-width: 140px;">
+                        <select id="filtro_tipo" class="form-select" onchange="filtrarProjetos()" style="font-size: 0.88rem;">
+                            <option value="">Todos os tipos</option>
+                            {% set tipos = [] %}
+                            {% for proj in projetos_ativos %}
+                                {% if proj.tipo and proj.tipo not in tipos %}
+                                    {% if tipos.append(proj.tipo) %}{% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            {% for tipo in tipos|sort %}
+                            <option value="{{ tipo }}">{{ tipo }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="min-width: 140px;">
+                        <select id="filtro_estufa" class="form-select" onchange="filtrarProjetos()" style="font-size: 0.88rem;">
+                            <option value="">Todas as estufas</option>
+                            {% for e in estufas %}
+                            <option value="{{ e }}">{{ e }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="sem_resultados" style="display: none; text-align: center; padding: 20px; color: var(--text-dim);">
+                    <i class="bi bi-search" style="font-size: 1.5rem; display: block; margin-bottom: 8px;"></i>
+                    <p style="margin: 0;">Nenhum projeto encontrado com os filtros selecionados.</p>
+                </div>
+                
+                {% if projetos_ativos %}
+                    {% for proj in projetos_ativos %}
+                    <div class="projeto-filtro-item" 
+                         data-nome="{{ proj.nome|lower }}" 
+                         data-ano="{{ proj.data_inicio[:4] if proj.data_inicio else '' }}" 
+                         data-tipo="{{ proj.tipo }}" 
+                         data-estufa="{{ proj.estufa }}"
+                         style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 3px solid var(--purple);">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: 700; color: var(--text);">{{ proj.nome }}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 6px;">
+                                    <div style="margin: 4px 0;"><i class="bi bi-building"></i> <strong>Estufa:</strong> {{ proj.estufa }}</div>
+                                    <div style="margin: 4px 0;"><i class="bi bi-calendar"></i> <strong>Data Início:</strong> {{ proj.data_inicio }}</div>
+                                    <div style="margin: 4px 0;"><span style="background: rgba(59,130,246,0.15); color: #93c5fd; padding: 2px 8px; border-radius: 12px; font-size: 0.8rem;">{{ proj.tipo }}</span></div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" class="btn btn-sm" style="background: var(--blue); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#editProjModal{{ proj.id }}">
+                                    <i class="bi bi-pencil"></i> Editar
+                                </button>
+                                <a href="/rotas/remover/{{ proj.id }}" style="background: var(--red); color: #fff; border: none; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 0.85rem; cursor: pointer;" onclick="return confirm('Remover este projeto?');">
+                                    <i class="bi bi-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; padding: 30px; color: var(--text-dim);">
+                        <i class="bi bi-inbox" style="font-size: 2rem; color: var(--text-dim); display: block; margin-bottom: 10px;"></i>
+                        <p>Nenhum projeto ativo. Crie um novo projeto para começar!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== MODAIS DE EDIÇÃO (fora do projeto-card para evitar conflito de stacking context com backdrop-filter) ===== -->
+{% if projetos_ativos %}
+    {% for proj in projetos_ativos %}
+    <div class="modal fade" id="editProjModal{{ proj.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ proj.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: var(--purple); color: #fff;">
+                    <h5 class="modal-title">Editar Projeto: {{ proj.nome }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <form action="/rotas/editar/{{ proj.id }}" method="POST">
+                    <div class="modal-body" style="max-height: 500px; overflow-y: auto;">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Estufa de Alocação</label>
+                                <select name="estufa" class="form-select" required>
+                                    {% for e in estufas %}
+                                    <option value="{{ e }}" {% if e == proj.estufa %}selected{% endif %}>{{ e }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Data de Início</label>
+                                <input type="date" name="data_inicio" class="form-control" value="{{ proj.data_inicio }}" required>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabela de Fases Editáveis -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <label class="form-label fw-semibold mb-0">⚙️ Fases da Rota</label>
+                            <button type="button" class="btn btn-sm" onclick="adicionarFaseModal({{ proj.id }})" style="background: #a855f7; color: #fff; border: none; border-radius: 6px; padding: 4px 12px; font-size: 0.82rem;">
+                                <i class="bi bi-plus-lg"></i> Adicionar Fase
+                            </button>
+                        </div>
+                        <div style="background: rgba(255,255,255,0.03); padding: 12px; border-radius: 8px;">
+                            <table class="table table-sm table-hover mb-0" style="font-size: 0.85rem;">
+                                <thead style="background: rgba(255,255,255,0.06);">
+                                    <tr>
+                                        <th style="width:5%;">Fase</th>
+                                        <th>Recipiente</th>
+                                        <th>Estufa</th>
+                                        <th>Meses</th>
+                                        <th>Quantidade</th>
+                                        <th title="Meses concomitantes">Conc.</th>
+                                        <th style="width:5%;text-align:center;">🗑</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modal_fases_tbody_{{ proj.id }}">
+                                    {% if proj.id in projetos_fases %}
+                                        {% for idx, fase in projetos_fases[proj.id].items() %}
+                                        <tr id="modal_fase_row_{{ proj.id }}_{{ idx }}">
+                                            <td style="font-weight: 600; color: #a855f7;">{{ loop.index }}</td>
+                                            <td>
+                                                <select name="fase_{{ idx }}_recipiente" class="form-select form-select-sm" required>
+                                                    <option value="Bandeja" {% if fase.recipiente == 'Bandeja' %}selected{% endif %}>Bandeja</option>
+                                                    <option value="Citropote" {% if fase.recipiente == 'Citropote' %}selected{% endif %}>Citropote</option>
+                                                    <option value="Vaso" {% if fase.recipiente == 'Vaso' %}selected{% endif %}>Vaso</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select name="fase_{{ idx }}_estufa" class="form-select form-select-sm">
+                                                    <option value="">Padrão ({{ proj.estufa }})</option>
+                                                    {% for e in estufas %}
+                                                    <option value="{{ e }}" {% if fase.estufa == e %}selected{% endif %}>{{ e }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" name="fase_{{ idx }}_meses" class="form-control form-control-sm" value="{{ fase.meses }}" min="1" max="60" required>
+                                            </td>
+                                            <td>
+                                                <input type="number" name="fase_{{ idx }}_quantidade" class="form-control form-control-sm" value="{{ fase.quantidade }}" min="1" required>
+                                            </td>
+                                            <td>
+                                                <input type="number" name="fase_{{ idx }}_concomitante" class="form-control form-control-sm" value="{{ fase.concomitante|default(0) }}" min="0" max="24" title="Meses que esta fase continua junto com a próxima">
+                                            </td>
+                                            <td style="text-align:center;vertical-align:middle;">
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('tr').remove()" style="padding:2px 6px;font-size:0.78rem;" title="Remover fase"><i class="bi bi-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" style="background: var(--purple); border: none;">Salvar Alterações</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+{% endif %}
+
+<!-- ===== INFO BOX ===== -->
+<div class="info-box">
+    <h5><i class="bi bi-info-circle"></i> Como usar</h5>
+    <p>
+        Crie um novo projeto escolhendo uma <strong>rota padrão</strong> (que preenche as fases automaticamente)
+        ou selecione <strong>Customizado</strong> e adicione as fases manualmente – escolhendo o recipiente, a quantidade,
+        a data de início e a duração (meses) de cada fase livremente. Ao salvar, toda a capacidade será recalculada automaticamente.
+    </p>
+</div>
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+// Dados das rotas padrão (espelhando o backend)
+const rotasPadrao = {
+    'Pipeline GM': [
+        { recipiente: 'Citropote', meses: 6, quantidade: 900, concomitante: 3 },
+        { recipiente: 'Bandeja', meses: 3, quantidade: 1170, concomitante: 0 },
+        { recipiente: 'Vaso', meses: 10, quantidade: 1000, concomitante: 0 }
+    ],
+    'Fast Track': [
+        { recipiente: 'Vaso', meses: 6, quantidade: 2000, concomitante: 0 },
+        { recipiente: 'Citropote', meses: 6, quantidade: 12240, concomitante: 3 },
+        { recipiente: 'Bandeja', meses: 3, quantidade: 650, concomitante: 0 }
+    ],
+    ' PoT': [
+        { recipiente: 'Citropote', meses: 6, quantidade: 1250, concomitante: 3 },
+        { recipiente: 'Bandeja', meses: 3, quantidade: 625, concomitante: 0 }
+    ],
+    'FwB Genitor': [
+        { recipiente: 'Citropote', meses: 5, quantidade: 360, concomitante: 0 },
+        { recipiente: 'Bandeja', meses: 3, quantidade: 500, concomitante: 0 },
+        { recipiente: 'Vaso', meses: 5, quantidade: 1280, concomitante: 0 },
+        { recipiente: 'Bandeja', meses: 2, quantidade: 144, concomitante: 0 }
+    ],
+    'Produção MGC': [
+        { recipiente: 'Bandeja', meses: 4, quantidade: 150, concomitante: 0 }
+    ],
+    'PROD PALMITO': [
+        { recipiente: 'Citropote', meses: 6, quantidade: 7560, concomitante: 0 }
+    ]
+};
+
+// Lista de estufas disponíveis (gerada pelo servidor)
+const estufasDisponiveis = [{% for e in estufas %}'{{ e }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+
+let fasesData = [];
+
+function somarMeses(dataISO, meses) {
+    const d = new Date(dataISO + 'T00:00:00');
+    d.setMonth(d.getMonth() + meses);
+    return d.toISOString().split('T')[0];
+}
+
+function getDataInicio() {
+    return document.getElementById('data_inicio_input').value || '';
+}
+
+function getEstufaPadrao() {
+    var sel = document.querySelector('select[name="estufa"]');
+    return sel ? sel.value : '';
+}
+
+function buildEstufaOptions(selectedVal) {
+    var defaultEstufa = getEstufaPadrao();
+    var html = '<option value="">Padrão' + (defaultEstufa ? ' (' + defaultEstufa + ')' : '') + '</option>';
+    for (var i = 0; i < estufasDisponiveis.length; i++) {
+        var e = estufasDisponiveis[i];
+        html += '<option value="' + e + '"' + (selectedVal === e ? ' selected' : '') + '>' + e + '</option>';
+    }
+    return html;
+}
+
+function recalcularDatas() {
+    var dataInicioVal = getDataInicio();
+    if (!dataInicioVal || fasesData.length === 0) return;
+    var proximoInicio = dataInicioVal;
+    for (var i = 0; i < fasesData.length; i++) {
+        fasesData[i].data_inicio = proximoInicio;
+        fasesData[i].data_fim = somarMeses(proximoInicio, fasesData[i].meses);
+        proximoInicio = fasesData[i].data_fim;
+    }
+}
+
+function atualizarDataProximaFase(idx) {
+    var dataInicioInput = document.querySelector('[name="fase_' + idx + '_data_inicio"]');
+    var mesesInput = document.querySelector('[name="fase_' + idx + '_meses"]');
+    if (!dataInicioInput || !mesesInput) return;
+    fasesData[idx].data_inicio = dataInicioInput.value;
+    fasesData[idx].meses = parseInt(mesesInput.value) || 1;
+    fasesData[idx].data_fim = somarMeses(fasesData[idx].data_inicio, fasesData[idx].meses);
+    var proximoInicio = fasesData[idx].data_fim;
+    for (var i = idx + 1; i < fasesData.length; i++) {
+        fasesData[i].data_inicio = proximoInicio;
+        fasesData[i].data_fim = somarMeses(proximoInicio, fasesData[i].meses);
+        proximoInicio = fasesData[i].data_fim;
+        var inp = document.querySelector('[name="fase_' + i + '_data_inicio"]');
+        if (inp) inp.value = fasesData[i].data_inicio;
+    }
+}
+
+function deletarFase(idx) {
+    fasesData.splice(idx, 1);
+    recalcularDatas();
+    montarTabela();
+}
+
+function adicionarFase() {
+    var dataInicioVal = getDataInicio();
+    if (!dataInicioVal) {
+        alert('Por favor, preencha a Data de Início primeiro.');
+        return;
+    }
+    var proximoInicio = dataInicioVal;
+    if (fasesData.length > 0) {
+        var last = fasesData[fasesData.length - 1];
+        proximoInicio = last.data_fim || somarMeses(last.data_inicio, last.meses);
+    }
+    fasesData.push({
+        recipiente: 'Bandeja',
+        quantidade: 100,
+        meses: 3,
+        concomitante: 0,
+        estufa: '',
+        data_inicio: proximoInicio,
+        data_fim: somarMeses(proximoInicio, 3)
+    });
+    montarTabela();
+}
+
+function montarTabela() {
+    var tbody = document.getElementById('fases_tbody');
+    var vazioDiv = document.getElementById('fases_vazio');
+    tbody.innerHTML = '';
+
+    if (fasesData.length === 0) {
+        if (vazioDiv) vazioDiv.style.display = 'block';
+        return;
+    }
+    if (vazioDiv) vazioDiv.style.display = 'none';
+
+    fasesData.forEach(function(fase, idx) {
+        var tr = document.createElement('tr');
+        var concStyle = fase.concomitante > 0 ? 'background:rgba(234,179,8,0.15);' : '';
+        tr.innerHTML =
+            '<td style="font-weight:600;color:#a855f7;vertical-align:middle;text-align:center;">' + (idx + 1) + '</td>' +
+            '<td>' +
+                '<select name="fase_' + idx + '_recipiente" class="form-select form-select-sm" style="font-size:0.8rem;">' +
+                    '<option value="Bandeja"' + (fase.recipiente === 'Bandeja' ? ' selected' : '') + '>Bandeja</option>' +
+                    '<option value="Citropote"' + (fase.recipiente === 'Citropote' ? ' selected' : '') + '>Citropote</option>' +
+                    '<option value="Vaso"' + (fase.recipiente === 'Vaso' ? ' selected' : '') + '>Vaso</option>' +
+                '</select>' +
+            '</td>' +
+            '<td>' +
+                '<select name="fase_' + idx + '_estufa" class="form-select form-select-sm" style="font-size:0.8rem;">' +
+                    buildEstufaOptions(fase.estufa || '') +
+                '</select>' +
+            '</td>' +
+            '<td>' +
+                '<input type="number" name="fase_' + idx + '_quantidade" class="form-control form-control-sm" value="' + fase.quantidade + '" min="1" style="font-size:0.8rem;">' +
+            '</td>' +
+            '<td>' +
+                '<input type="date" name="fase_' + idx + '_data_inicio" class="form-control form-control-sm" value="' + fase.data_inicio + '" style="font-size:0.8rem;" onchange="atualizarDataProximaFase(' + idx + ')">' +
+            '</td>' +
+            '<td>' +
+                '<input type="number" name="fase_' + idx + '_meses" class="form-control form-control-sm" value="' + fase.meses + '" min="1" max="60" style="font-size:0.8rem;" onchange="atualizarDataProximaFase(' + idx + ')">' +
+            '</td>' +
+            '<td>' +
+                '<input type="number" name="fase_' + idx + '_concomitante" class="form-control form-control-sm" value="' + (fase.concomitante || 0) + '" min="0" max="24" style="font-size:0.8rem;' + concStyle + '" title="Meses que esta fase continua junto com a próxima">' +
+            '</td>' +
+            '<td style="text-align:center;vertical-align:middle;">' +
+                '<button type="button" class="btn btn-sm btn-outline-danger" title="Remover fase" onclick="deletarFase(' + idx + ')" style="padding:2px 6px;font-size:0.78rem;">' +
+                    '<i class="bi bi-trash"></i>' +
+                '</button>' +
+            '</td>' +
+            '<input type="hidden" name="fase_' + idx + '_data_fim" value="' + fase.data_fim + '">';
+        tbody.appendChild(tr);
+    });
+}
+
+function renderizarFases() {
+    var tipo = document.getElementById('tipo_projeto_select').value;
+    var dataInicioVal = getDataInicio();
+
+    // Se customizado ou tipo sem rota padrão, não preencher automaticamente
+    if (!tipo || tipo === 'Customizado' || !rotasPadrao[tipo]) {
+        // Mantém as fases manuais se já houver, caso contrário limpa
+        if (fasesData.length === 0) {
+            montarTabela();
+        }
+        return;
+    }
+
+    if (!dataInicioVal) {
+        montarTabela();
+        return;
+    }
+
+    fasesData = [];
+    var fases = rotasPadrao[tipo];
+    var proximoInicio = dataInicioVal;
+
+    for (var i = 0; i < fases.length; i++) {
+        var f = fases[i];
+        var dataFim = somarMeses(proximoInicio, f.meses);
+        fasesData.push({
+            recipiente: f.recipiente,
+            quantidade: f.quantidade,
+            meses: f.meses,
+            concomitante: f.concomitante || 0,
+            estufa: '',
+            data_inicio: proximoInicio,
+            data_fim: dataFim
+        });
+        proximoInicio = dataFim;
+    }
+
+    montarTabela();
+}
+
+// Função para adicionar fase no modal de edição
+function adicionarFaseModal(projId) {
+    var tbody = document.getElementById('modal_fases_tbody_' + projId);
+    if (!tbody) return;
+    
+    // Encontrar o próximo índice de fase disponível
+    var maxIdx = 0;
+    tbody.querySelectorAll('tr').forEach(function(tr) {
+        tr.querySelectorAll('select, input').forEach(function(el) {
+            var match = el.name.match(/fase_(\d+)_/);
+            if (match) {
+                var n = parseInt(match[1]);
+                if (n >= maxIdx) maxIdx = n + 1;
+            }
+        });
+    });
+    
+    // Obter estufa padrão do projeto (do select de estufa do modal)
+    var modalForm = tbody.closest('form');
+    var estufaSelect = modalForm ? modalForm.querySelector('select[name="estufa"]') : null;
+    var estufaPadrao = estufaSelect ? estufaSelect.value : '';
+    
+    var estufaOpts = '<option value="">Padrão' + (estufaPadrao ? ' (' + estufaPadrao + ')' : '') + '</option>';
+    for (var i = 0; i < estufasDisponiveis.length; i++) {
+        estufaOpts += '<option value="' + estufasDisponiveis[i] + '">' + estufasDisponiveis[i] + '</option>';
+    }
+    
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+        '<td style="font-weight:600;color:#a855f7;">' + (tbody.rows.length + 1) + '</td>' +
+        '<td>' +
+            '<select name="fase_' + maxIdx + '_recipiente" class="form-select form-select-sm" required>' +
+                '<option value="Bandeja">Bandeja</option>' +
+                '<option value="Citropote">Citropote</option>' +
+                '<option value="Vaso">Vaso</option>' +
+            '</select>' +
+        '</td>' +
+        '<td>' +
+            '<select name="fase_' + maxIdx + '_estufa" class="form-select form-select-sm">' +
+                estufaOpts +
+            '</select>' +
+        '</td>' +
+        '<td><input type="number" name="fase_' + maxIdx + '_meses" class="form-control form-control-sm" value="3" min="1" max="60" required></td>' +
+        '<td><input type="number" name="fase_' + maxIdx + '_quantidade" class="form-control form-control-sm" value="100" min="1" required></td>' +
+        '<td><input type="number" name="fase_' + maxIdx + '_concomitante" class="form-control form-control-sm" value="0" min="0" max="24"></td>' +
+        '<td style="text-align:center;vertical-align:middle;">' +
+            '<button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest(\'tr\').remove()" style="padding:2px 6px;font-size:0.78rem;" title="Remover fase"><i class="bi bi-trash"></i></button>' +
+        '</td>';
+    tbody.appendChild(tr);
+}
+
+// Validar form antes de enviar
+document.getElementById('form_criar_projeto').addEventListener('submit', function(e) {
+    if (fasesData.length === 0) {
+        var tipo = document.getElementById('tipo_projeto_select').value;
+        if (tipo === 'Customizado' || !rotasPadrao[tipo]) {
+            e.preventDefault();
+            alert('Adicione pelo menos uma fase ao projeto.');
+            return false;
+        }
+    }
+});
+
+// Event listeners
+document.getElementById('tipo_projeto_select').addEventListener('change', function() {
+    // Quando muda o tipo, recarrega fases da rota padrão (limpa manuais)
+    fasesData = [];
+    renderizarFases();
+});
+document.getElementById('data_inicio_input').addEventListener('change', function() {
+    if (fasesData.length > 0) {
+        recalcularDatas();
+        montarTabela();
+    } else {
+        renderizarFases();
+    }
+});
+
+// Inicializar tabela vazia
+montarTabela();
+
+// ===== FILTRO DE PROJETOS =====
+function filtrarProjetos() {
+    var pesquisa = document.getElementById('pesquisa_projeto').value.toLowerCase().trim();
+    var filtroAno = document.getElementById('filtro_ano').value;
+    var filtroTipo = document.getElementById('filtro_tipo').value;
+    var filtroEstufa = document.getElementById('filtro_estufa').value;
+    
+    var itens = document.querySelectorAll('.projeto-filtro-item');
+    var visiveis = 0;
+    
+    itens.forEach(function(item) {
+        var nome = item.getAttribute('data-nome') || '';
+        var ano = item.getAttribute('data-ano') || '';
+        var tipo = item.getAttribute('data-tipo') || '';
+        var estufa = item.getAttribute('data-estufa') || '';
+        
+        var matchPesquisa = !pesquisa || nome.indexOf(pesquisa) !== -1;
+        var matchAno = !filtroAno || ano === filtroAno;
+        var matchTipo = !filtroTipo || tipo === filtroTipo;
+        var matchEstufa = !filtroEstufa || estufa === filtroEstufa;
+        
+        if (matchPesquisa && matchAno && matchTipo && matchEstufa) {
+            item.style.display = '';
+            visiveis++;
+        } else {
+            item.style.display = 'none';
+        }
+    });
+    
+    // Atualizar contador
+    document.getElementById('projetos_count').textContent = visiveis;
+    
+    // Mostrar mensagem "sem resultados"
+    var semResultados = document.getElementById('sem_resultados');
+    var semProjetosDivs = document.querySelectorAll('.projeto-filtro-item');
+    if (semProjetosDivs.length > 0 && visiveis === 0) {
+        semResultados.style.display = 'block';
+    } else {
+        semResultados.style.display = 'none';
+    }
+}
+</script>
+
+</body>
+</html>

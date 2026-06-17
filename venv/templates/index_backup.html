@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard – Gerenciamento de Ocupação das Estufas</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --cor-bg: #f4f6f9;
+            --cor-card: #ffffff;
+            --cor-borda: #e0e4ea;
+        }
+        body {
+            background: var(--cor-bg);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            padding: 0;
+            margin: 0;
+        }
+
+        /* ===== HEADER ===== */
+        .dash-header {
+            background: linear-gradient(135deg, #1a5276, #2e86c1);
+            color: #fff;
+            padding: 28px 0 18px;
+            text-align: center;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,.15);
+        }
+        .dash-header h1 {
+            font-size: 1.7rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: .5px;
+        }
+        .dash-header small {
+            opacity: .8;
+            font-size: .85rem;
+        }
+
+        /* ===== FILTROS ===== */
+        .filtros-box {
+            background: var(--cor-card);
+            border: 1px solid var(--cor-borda);
+            border-radius: 12px;
+            padding: 18px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.05);
+        }
+
+        /* ===== CARDS RESUMO ===== */
+        .kpi-card {
+            background: var(--cor-card);
+            border-radius: 12px;
+            border: 1px solid var(--cor-borda);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,.06);
+            transition: transform .15s;
+        }
+        .kpi-card:hover { transform: translateY(-2px); }
+        .kpi-card .kpi-icon {
+            font-size: 2rem;
+            margin-bottom: 6px;
+        }
+        .kpi-card .kpi-label {
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: #6c757d;
+            margin-bottom: 4px;
+        }
+        .kpi-card .kpi-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+        }
+        .kpi-card .kpi-unit {
+            font-size: .75rem;
+            color: #999;
+        }
+
+        /* ===== REDESIGN ESTUFA CARD ===== */
+        .estufa-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fb 100%);
+            border-radius: 16px;
+            border: none;
+            padding: 28px;
+            box-shadow: 0 8px 32px rgba(0,0,0,.08);
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .estufa-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #2e86c1, #3a9dd7);
+        }
+
+        .estufa-card.cdv9::before {
+            background: linear-gradient(90deg, #9b59b6, #b574d1);
+        }
+
+        .estufa-card:hover {
+            box-shadow: 0 16px 48px rgba(0,0,0,.12);
+            transform: translateY(-4px);
+        }
+
+        .estufa-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e8ecf0;
+        }
+
+        .estufa-nome {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: .5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .estufa-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: .8rem;
+            font-weight: 600;
+            letter-spacing: .3px;
+        }
+
+        .estufa-status.status-ok {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .estufa-status.status-atencao {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .estufa-status.status-critico {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .gauge-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .gauge-center {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .gauge-value {
+            font-size: 2.4rem;
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+
+        .gauge-label {
+            font-size: .75rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        svg.gauge-container circle.gauge-bg {
+            fill: none;
+            stroke: #f0f0f0;
+            stroke-width: 6;
+        }
+
+        svg.gauge-container circle.gauge-fill {
+            fill: none;
+            stroke-width: 6;
+            stroke-linecap: round;
+            transition: stroke-dashoffset .6s ease;
+        }
+
+        svg.gauge-container circle.gauge-fill.green {
+            stroke: #27ae60;
+        }
+
+        svg.gauge-container circle.gauge-fill.yellow {
+            stroke: #f39c12;
+        }
+
+        svg.gauge-container circle.gauge-fill.red {
+            stroke: #e74c3c;
+        }
+
+        .estufa-metricas {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .metrica-box {
+            background: linear-gradient(135deg, rgba(255,255,255,.7), rgba(255,255,255,.4));
+            border-radius: 10px;
+            padding: 14px;
+            border: 1px solid rgba(255,255,255,.8);
+            text-align: center;
+        }
+
+        .metrica-box.capacidade {
+            border-left: 3px solid #3498db;
+        }
+
+        .metrica-box.consumido {
+            border-left: 3px solid #e74c3c;
+        }
+
+        .metrica-box.disponivel {
+            border-left: 3px solid #27ae60;
+        }
+
+        .metrica-valor {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #2c3e50;
+            line-height: 1;
+        }
+
+        .metrica-label {
+            font-size: .75rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        .excesso-alert {
+            background: linear-gradient(135deg, #fadbd8 0%, #f5b7b1 100%);
+            border-left: 4px solid #e74c3c;
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 18px;
+            font-weight: 600;
+            color: #721c24;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .excesso-alert i {
+            font-size: 1.2rem;
+        }
+
+        /* ===== PROGRESS BAR PERSONALIZADA ===== */
+        .uso-bar-container {
+            background: #e9ecef;
+            border-radius: 8px;
+            height: 22px;
+            overflow: hidden;
+            position: relative;
+        }
+        .uso-bar-fill {
+            height: 100%;
+            border-radius: 8px;
+            transition: width .5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 600;
+            font-size: .72rem;
+            min-width: 38px;
+        }
+        .uso-bar-fill.green  { background: linear-gradient(90deg, #27ae60, #2ecc71); }
+        .uso-bar-fill.yellow { background: linear-gradient(90deg, #f39c12, #f1c40f); }
+        .uso-bar-fill.red    { background: linear-gradient(90deg, #c0392b, #e74c3c); }
+
+        /* ===== GAUGE CIRCULAR (OCUPAÇÃO) ===== */
+        .gauge-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+        }
+        .gauge-bg {
+            fill: none;
+            stroke: #e9ecef;
+            stroke-width: 18;
+        }
+        .gauge-fill {
+            fill: none;
+            stroke-width: 18;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dashoffset 1s ease-out, stroke 0.3s;
+        }
+        .gauge-fill.green { stroke: #27ae60; }
+        .gauge-fill.yellow { stroke: #f39c12; }
+        .gauge-fill.red { stroke: #e74c3c; }
+        .gauge-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        .gauge-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+        .gauge-label {
+            font-size: 0.75rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* ===== ESTUFA CARD GRANDE ===== */
+        .estufa-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 16px;
+            border: 2px solid var(--cor-borda);
+            padding: 24px;
+            box-shadow: 0 4px 15px rgba(0,0,0,.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .estufa-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,.12);
+        }
+        .estufa-card.cdv1 { border-left: 5px solid #2e86c1; }
+        .estufa-card.cdv9 { border-left: 5px solid #9b59b6; }
+        .estufa-card.danger { 
+            border-color: #e74c3c;
+            background: linear-gradient(145deg, #fff5f5, #ffe6e6);
+        }
+        .estufa-card.warning { 
+            border-color: #f39c12;
+            background: linear-gradient(145deg, #fffbf0, #fff3d6);
+        }
+        .estufa-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        .estufa-nome {
+            font-size: 1.4rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .estufa-nome i {
+            font-size: 1.6rem;
+        }
+        .estufa-status {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .status-ok { background: #d4edda; color: #155724; }
+        .status-atencao { background: #fff3cd; color: #856404; }
+        .status-critico { background: #f8d7da; color: #721c24; }
+        
+        .estufa-metricas {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .metrica-box {
+            text-align: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 10px;
+            border: 1px solid #eee;
+        }
+        .metrica-valor {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .metrica-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+        .metrica-box.capacidade .metrica-valor { color: #2e86c1; }
+        .metrica-box.consumido .metrica-valor { color: #e74c3c; }
+        .metrica-box.disponivel .metrica-valor { color: #27ae60; }
+        
+        /* Alert de excesso */
+        .excesso-alert {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        /* ===== TIMELINE MENSAL ===== */
+        .timeline-container {
+            background: linear-gradient(135deg, rgba(255,255,255,.95), rgba(248,249,251,.95));
+            border-radius: 16px;
+            padding: 28px;
+            border: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,.08);
+            position: relative;
+        }
+
+        .timeline-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+            background: linear-gradient(90deg, #2e86c1, #3a9dd7);
+        }
+
+        .timeline-container.cdv9::before {
+            background: linear-gradient(90deg, #9b59b6, #b574d1);
+        }
+
+        .timeline-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #2c3e50;
+            letter-spacing: .3px;
+        }
+
+        .timeline-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(95px, 1fr));
+            gap: 14px;
+        }
+
+        .mes-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f5f7fa 100%);
+            border: 1.5px solid #e8ecf0;
+            border-radius: 12px;
+            padding: 14px 10px;
+            text-align: center;
+            transition: all .3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mes-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,.5), transparent);
+            opacity: 0;
+            transition: opacity .3s;
+            pointer-events: none;
+        }
+
+        .mes-card:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 12px 28px rgba(46, 134, 193, .15);
+            border-color: #2e86c1;
+        }
+
+        .mes-card.warning:hover {
+            box-shadow: 0 12px 28px rgba(243, 156, 18, .15);
+            border-color: #f39c12;
+        }
+
+        .mes-card.danger:hover {
+            box-shadow: 0 12px 28px rgba(231, 76, 60, .15);
+            border-color: #e74c3c;
+        }
+
+        .mes-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            border-radius: 12px 12px 0 0;
+        }
+
+        .mes-card.warning::before {
+            background: linear-gradient(90deg, #f39c12, #f1c40f);
+        }
+
+        .mes-card.danger::before {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+
+        .mes-numero {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+        }
+
+        .mes-uso {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #27ae60;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .mes-uso.warning {
+            color: #f39c12;
+        }
+
+        .mes-uso.danger {
+            color: #e74c3c;
+        }
+
+        .mes-label {
+            font-size: 0.65rem;
+            color: #bdc3c7;
+            text-transform: uppercase;
+            letter-spacing: .3px;
+            font-weight: 600;
+        }
+
+        .mes-popup {
+            display: none;
+            position: absolute;
+            bottom: -110px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 12px 14px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-size: 0.75rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,.2);
+            white-space: normal;
+            width: 140px;
+            text-align: left;
+            line-height: 1.5;
+        }
+
+        .mes-popup::before {
+            content: '';
+            position: absolute;
+            top: -7px;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 7px solid transparent;
+            border-bottom-color: #2c3e50;
+        }
+
+        .mes-popup strong {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 700;
+            color: #ecf0f1;
+            border-bottom: 1px solid rgba(255,255,255,.2);
+            padding-bottom: 6px;
+        }
+
+        .mes-card:hover .mes-popup {
+            display: block;
+            animation: popupSlideIn .3s ease;
+        }
+
+        @keyframes popupSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* ===== CARD RECIPIENTE ===== */
+        .rec-card {
+            background: var(--cor-card);
+            border-radius: 12px;
+            border: 1px solid var(--cor-borda);
+            padding: 16px 20px;
+            box-shadow: 0 2px 6px rgba(0,0,0,.06);
+            margin-bottom: 16px;
+        }
+        .rec-card .rec-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .rec-card .rec-title {
+            font-weight: 600;
+            font-size: .95rem;
+        }
+        .rec-card .rec-badge {
+            font-size: .72rem;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+        .rec-card .rec-stats {
+            display: flex;
+            gap: 18px;
+            font-size: .8rem;
+            color: #555;
+            margin-top: 8px;
+        }
+        .rec-card .rec-stats span {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* ===== SEÇÕES ===== */
+        .section-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 30px 0 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #2e86c1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ===== TABELA VISUAL ===== */
+        .tabela-visual {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--cor-card);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,.06);
+            font-size: .85rem;
+        }
+        .tabela-visual thead th {
+            background: #2c3e50;
+            color: #fff;
+            font-weight: 600;
+            padding: 12px 10px;
+            text-align: center;
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .4px;
+        }
+        .tabela-visual tbody td {
+            padding: 10px;
+            text-align: center;
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .tabela-visual tbody tr:hover {
+            background: #f8f9ff;
+        }
+        .tabela-visual .uso-mini-bar {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tabela-visual .mini-bar {
+            width: 70px;
+            height: 10px;
+            background: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+            display: inline-block;
+        }
+        .tabela-visual .mini-bar-fill {
+            height: 100%;
+            border-radius: 5px;
+        }
+
+        /* ===== CHART BOXES ===== */
+        .chart-box {
+            background: var(--cor-card);
+            border-radius: 12px;
+            border: 1px solid var(--cor-borda);
+            padding: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,.06);
+            margin-bottom: 20px;
+        }
+
+        /* ===== EXPORTAR ===== */
+        .export-btn {
+            border-radius: 8px;
+            padding: 10px 28px;
+            font-weight: 600;
+            font-size: .9rem;
+        }
+
+        @media (max-width: 768px) {
+            .kpi-card .kpi-value { font-size: 1.2rem; }
+        }
+
+        /* ===== NAV BAR ===== */
+        .nav-bar {
+            background: #fff;
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--cor-borda);
+            margin-bottom: 20px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+        .nav-bar a {
+            color: #2c3e50;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 6px;
+            transition: all .15s;
+        }
+        .nav-bar a:hover {
+            background: #f0f0f0;
+        }
+        .nav-bar a.active {
+            background: #2e86c1;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="dash-header">
+    <h1><i class="bi bi-building"></i> Dashboard de Gerenciamento de Ocupação das Estufas</h1>
+    <small>Unidade de medida: metros quadrados (m²) | Atualização em tempo real</small>
+</div>
+
+<!-- ===== NAV BAR ===== -->
+<div class="nav-bar">
+    <a href="/" class="active"><i class="bi bi-house"></i> Dashboard</a>
+    <a href="/rotas"><i class="bi bi-diagram-3"></i> Projetos & Rotas</a>
+    <a href="/simulacao"><i class="bi bi-lightning-charge"></i> Simulação</a>
+    <a href="/excel"><i class="bi bi-file-excel"></i> Exportar Excel</a>
+    <a href="/pdf"><i class="bi bi-file-pdf"></i> Exportar PDF</a>
+</div>
+
+<div class="container-fluid px-4">
+
+<!-- ===== FILTROS ===== -->
+<div class="filtros-box">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-2">
+            <label class="form-label fw-semibold" style="font-size:.82rem">Ano</label>
+            <select name="ano" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for a in anos %}
+                <option value="{{ a }}" {% if request.args.get('ano', '')|int == a %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold" style="font-size:.82rem">Mês</label>
+            <select name="mes" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for m in meses %}
+                <option value="{{ m }}" {% if request.args.get('mes', '')|int == m %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold" style="font-size:.82rem">Estufa</label>
+            <select name="estufa" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for e in estufas %}
+                <option value="{{ e }}" {% if request.args.get('estufa') == e %}selected{% endif %}>{{ e }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-semibold" style="font-size:.82rem">Projeto</label>
+            <select name="projeto" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for p in projetos %}
+                <option value="{{ p }}" {% if request.args.get('projeto') == p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold" style="font-size:.82rem">Recipiente</label>
+            <select name="recipiente" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for r in recipientes %}
+                <option value="{{ r }}" {% if request.args.get('recipiente') == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-1">
+            <button type="submit" class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-funnel"></i> Filtrar
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- ===== ALERTAS ===== -->
+{% if total.alertas %}
+<div class="mb-3">
+    {% for alerta in total.alertas %}
+    <div class="alert alert-{{ alerta.tipo }} alert-dismissible fade show py-2" role="alert" style="font-size: 0.9rem;">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        {{ alerta.msg }}
+        <button type="button" class="btn-close btn-sm" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ===== HEADER COM MÊS DE REFERÊNCIA ===== -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="mb-1" style="color: #2c3e50;">
+            <i class="bi bi-speedometer2"></i> Ocupação das Estufas
+        </h4>
+        <span class="text-muted">
+            <i class="bi bi-calendar3"></i> Mês de Referência: <strong style="color: #2e86c1;">{{ total.mes_referencia }}</strong>
+        </span>
+    </div>
+    {% if total.pico.uso > 0 %}
+    <div class="text-end">
+        <small class="text-muted d-block">Pico Previsto</small>
+        <span class="badge bg-{% if total.pico.uso >= 90 %}danger{% elif total.pico.uso >= 75 %}warning text-dark{% else %}success{% endif %}" style="font-size: 1rem; padding: 8px 16px;">
+            <i class="bi bi-graph-up-arrow"></i> {{ total.pico.uso }}% em {{ total.pico.mes }}
+        </span>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===== CARDS GRANDES COM MEDIDORES CIRCULARES ===== -->
+<div class="row g-4 mb-4">
+    <!-- CDV1 -->
+    <div class="col-12 col-lg-6">
+        <div class="estufa-card cdv1 {% if total.CDV1.excesso > 0 %}danger{% elif total.CDV1.uso >= 85 %}warning{% endif %}">
+            <div class="estufa-header">
+                <div class="estufa-nome" style="color: #2e86c1;">
+                    <i class="bi bi-building-fill"></i>
+                    <span>CDV1</span>
+                </div>
+                <span class="estufa-status {% if total.CDV1.uso < 60 %}status-ok{% elif total.CDV1.uso < 85 %}status-atencao{% else %}status-critico{% endif %}">
+                    {% if total.CDV1.uso < 60 %}
+                        <i class="bi bi-check-circle"></i> Normal
+                    {% elif total.CDV1.uso < 85 %}
+                        <i class="bi bi-exclamation-circle"></i> Atenção
+                    {% else %}
+                        <i class="bi bi-exclamation-triangle"></i> Crítico
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="row align-items-center">
+                <div class="col-5">
+                    <!-- Gauge Circular -->
+                    <div class="gauge-container">
+                        <svg viewBox="0 0 100 100" width="180" height="180">
+                            <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                            <circle class="gauge-fill {% if total.CDV1.uso < 60 %}green{% elif total.CDV1.uso < 85 %}yellow{% else %}red{% endif %}" 
+                                    cx="50" cy="50" r="40"
+                                    stroke-dasharray="251.2"
+                                    stroke-dashoffset="{{ 251.2 - (251.2 * ([total.CDV1.uso, 100] | min) / 100) }}">
+                            </circle>
+                        </svg>
+                        <div class="gauge-center">
+                            <div class="gauge-value" style="color: {% if total.CDV1.uso < 60 %}#27ae60{% elif total.CDV1.uso < 85 %}#f39c12{% else %}#e74c3c{% endif %};">
+                                {{ total.CDV1.uso }}%
+                            </div>
+                            <div class="gauge-label">ocupado</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-7">
+                    <div class="estufa-metricas">
+                        <div class="metrica-box capacidade">
+                            <div class="metrica-valor">{{ "{:,.0f}".format(total.CDV1.capacidade) }}</div>
+                            <div class="metrica-label">Capacidade (m²)</div>
+                        </div>
+                        <div class="metrica-box consumido">
+                            <div class="metrica-valor">{{ "{:,.0f}".format(total.CDV1.consumido) }}</div>
+                            <div class="metrica-label">Consumido (m²)</div>
+                        </div>
+                        <div class="metrica-box disponivel">
+                            <div class="metrica-valor">{{ "{:,.0f}".format(total.CDV1.disponivel) }}</div>
+                            <div class="metrica-label">Disponível (m²)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if total.CDV1.excesso > 0 %}
+            <div class="excesso-alert">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+                <span>EXCESSO DE CAPACIDADE: {{ total.CDV1.excesso }} m² além do limite!</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- CDV9 -->
+    <div class="col-12 col-lg-6">
+        <div class="estufa-card cdv9 {% if total.CDV9.excesso > 0 %}danger{% elif total.CDV9.uso >= 85 %}warning{% endif %}">
+            <div class="estufa-header">
+                <div class="estufa-nome" style="color: #9b59b6;">
+                    <i class="bi bi-building-fill"></i>
+                    <span>CDV9</span>
+                </div>
+                <span class="estufa-status {% if total.CDV9.uso < 60 %}status-ok{% elif total.CDV9.uso < 85 %}status-atencao{% else %}status-critico{% endif %}">
+                    {% if total.CDV9.uso < 60 %}
+                        <i class="bi bi-check-circle"></i> Normal
+                    {% elif total.CDV9.uso < 85 %}
+                        <i class="bi bi-exclamation-circle"></i> Atenção
+                    {% else %}
+                        <i class="bi bi-exclamation-triangle"></i> Crítico
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="row align-items-center">
+                <div class="col-5">
+                    <!-- Gauge Circular -->
+                    <div class="gauge-container">
+                        <svg viewBox="0 0 100 100" width="180" height="180">
+                            <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                            <circle class="gauge-fill {% if total.CDV9.uso < 60 %}green{% elif total.CDV9.uso < 85 %}yellow{% else %}red{% endif %}" 
+                                    cx="50" cy="50" r="40"
+                                    stroke-dasharray="251.2"
+                                    stroke-dashoffset="{{ 251.2 - (251.2 * ([total.CDV9.uso, 100] | min) / 100) }}">
+                            </circle>
+                        </svg>
+                        <div class="gauge-center">
+                            <div class="gauge-value" style="color: {% if total.CDV9.uso < 60 %}#27ae60{% elif total.CDV9.uso < 85 %}#f39c12{% else %}#e74c3c{% endif %};">
+                                {{ total.CDV9.uso }}%
+                            </div>
+                            <div class="gauge-label">ocupado</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-7">
+                    <div class="estufa-metricas">
+                        <div class="metrica-box capacidade">
+                            <div class="metrica-valor">{{ "{:,.0f}".format(total.CDV9.capacidade) }}</div>
+                            <div class="metrica-label">Capacidade (m²)</div>
+                        </div>
+                        <div class="metrica-box consumido">
+                            <div class="metrica-valor">{{ "{:,.0f}".format(total.CDV9.consumido) }}</div>
+                            <div class="metrica-label">Consumido (m²)</div>
+                        </div>
+                        <div class="metrica-box disponivel">
+                            <div class="metrica-valor">{{ "{:,.0f}".format(total.CDV9.disponivel) }}</div>
+                            <div class="metrica-label">Disponível (m²)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if total.CDV9.excesso > 0 %}
+            <div class="excesso-alert">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+                <span>EXCESSO DE CAPACIDADE: {{ total.CDV9.excesso }} m² além do limite!</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ===== RESUMO CONSOLIDADO ===== -->
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body py-3">
+                <div class="row align-items-center text-center">
+                    <div class="col-md-3 border-end">
+                        <div class="text-muted small text-uppercase">Capacidade Total</div>
+                        <div class="h4 mb-0" style="color: #2e86c1;">
+                            <i class="bi bi-box-seam"></i> {{ "{:,.1f}".format(total.Capacidade) }} m²
+                        </div>
+                    </div>
+                    <div class="col-md-3 border-end">
+                        <div class="text-muted small text-uppercase">Consumido</div>
+                        <div class="h4 mb-0" style="color: #e74c3c;">
+                            <i class="bi bi-box-fill"></i> {{ "{:,.1f}".format(total.Consumido) }} m²
+                        </div>
+                    </div>
+                    <div class="col-md-3 border-end">
+                        <div class="text-muted small text-uppercase">Disponível</div>
+                        <div class="h4 mb-0" style="color: #27ae60;">
+                            <i class="bi bi-check-circle"></i> {{ "{:,.1f}".format(total.Disponivel) }} m²
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="text-muted small text-uppercase">Ocupação Geral</div>
+                        <div class="h3 mb-0" style="color: {% if total.Uso < 60 %}#27ae60{% elif total.Uso < 85 %}#f39c12{% else %}#e74c3c{% endif %};">
+                            <i class="bi bi-speedometer2"></i> {{ total.Uso }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== TIMELINE MENSAL POR ESTUFA ===== -->
+<div class="row g-4 mb-4">
+    <!-- CDV1 Timeline -->
+    {% if resumo_cdv1 %}
+    <div class="col-12 col-lg-6">
+        <div class="timeline-container">
+            <div class="timeline-title" style="color: #2e86c1;">
+                <i class="bi bi-calendar-week"></i> Ocupação Mensal CDV1
+            </div>
+            <div class="timeline-grid">
+                {% for mes in resumo_cdv1 %}
+                <div class="mes-card {{ mes.cor }}">
+                    <div class="mes-numero">{{ mes.mes_display }}</div>
+                    <div class="mes-uso {{ mes.cor }}">{{ mes.uso }}%</div>
+                    <div class="mes-label">ocupado</div>
+                    <div class="mes-popup">
+                        <strong>{{ mes.mes_display }}</strong><br>
+                        Cap: {{ mes.capacidade }} m²<br>
+                        Con: {{ mes.consumido }} m²<br>
+                        Disp: {{ mes.disponivel }} m²
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- CDV9 Timeline -->
+    {% if resumo_cdv9 %}
+    <div class="col-12 col-lg-6">
+        <div class="timeline-container cdv9">
+            <div class="timeline-title" style="color: #9b59b6;">
+                <i class="bi bi-calendar-week"></i> Ocupação Mensal CDV9
+            </div>
+            <div class="timeline-grid">
+                {% for mes in resumo_cdv9 %}
+                <div class="mes-card {{ mes.cor }}">
+                    <div class="mes-numero">{{ mes.mes_display }}</div>
+                    <div class="mes-uso {{ mes.cor }}">{{ mes.uso }}%</div>
+                    <div class="mes-label">ocupado</div>
+                    <div class="mes-popup">
+                        <strong>{{ mes.mes_display }}</strong><br>
+                        Cap: {{ mes.capacidade }} m²<br>
+                        Con: {{ mes.consumido }} m²<br>
+                        Disp: {{ mes.disponivel }} m²
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ===== CARDS POR RECIPIENTE + ESTUFA ===== -->
+<div class="section-title">
+    <i class="bi bi-grid-3x3-gap"></i> Ocupação por Recipiente / Estufa
+</div>
+<div class="row g-3 mb-3">
+    {% for c in cards %}
+    <div class="col-md-4 col-lg-4">
+        <div class="rec-card">
+            <div class="rec-header">
+                <span class="rec-title">
+                    <i class="bi bi-building"></i> {{ c.estufa }} – {{ c.recipiente }}
+                </span>
+                <span class="rec-badge bg-{{ c.badge }} {% if c.badge == 'warning' %}text-dark{% else %}text-white{% endif %}">
+                    {{ c.uso }}%
+                </span>
+            </div>
+            <div class="uso-bar-container">
+                <div class="uso-bar-fill {% if c.uso < 60 %}green{% elif c.uso < 85 %}yellow{% else %}red{% endif %}" 
+                     style="width: {{ [c.uso, 100] | min }}%">
+                    {{ c.uso }}%
+                </div>
+            </div>
+            <div class="rec-stats">
+                <span><i class="bi bi-box-fill" style="color:#e74c3c"></i> {{ c.consumido }} m²</span>
+                <span><i class="bi bi-check-circle" style="color:#27ae60"></i> {{ c.disponivel }} m²</span>
+                <span><i class="bi bi-arrows-fullscreen" style="color:#2e86c1"></i> {{ c.capacidade }} m²</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- ===== GRÁFICO BARRAS EMPILHADAS ===== -->
+<div class="section-title">
+    <i class="bi bi-bar-chart-fill"></i> Visão Geral de Capacidade
+</div>
+<div class="chart-box">
+    {{ barras | safe }}
+</div>
+
+<!-- ===== HEATMAP MENSAL ===== -->
+<div class="section-title">
+    <i class="bi bi-grid-fill"></i> Mapa de Calor – Ocupação Mensal
+</div>
+<div class="chart-box">
+    {{ heatmap | safe }}
+</div>
+
+<!-- ===== GRÁFICOS OCUPAÇÃO + GANTT ===== -->
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="section-title">
+            <i class="bi bi-graph-up"></i> Evolução da Ocupação
+        </div>
+        <div class="chart-box">
+            {{ ocupacao | safe }}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="section-title">
+            <i class="bi bi-calendar-range"></i> Cronograma dos Projetos
+        </div>
+        <div class="chart-box">
+            {{ gantt | safe }}
+        </div>
+    </div>
+</div>
+
+<!-- ===== TABELA DETALHADA COM BARRAS VISUAIS ===== -->
+<div class="section-title">
+    <i class="bi bi-table"></i> Detalhes da Ocupação (Agrupado por Recipiente)
+</div>
+<div class="chart-box" style="overflow-x:auto">
+    <table class="tabela-visual">
+        <thead>
+            <tr>
+                <th style="width:60px">Ano</th>
+                <th style="width:50px">Mês</th>
+                <th style="width:90px">Estufa</th>
+                <th style="width:100px">Recipiente</th>
+                <th style="min-width:280px">Projetos (Demanda em m²)</th>
+                <th style="width:120px">Demanda Total</th>
+                <th style="width:120px">Capacidade</th>
+                <th style="width:120px">Disponível</th>
+                <th style="min-width:180px">Uso (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in tabela_rows %}
+            <tr>
+                <td><strong>{{ r.ano }}</strong></td>
+                <td><strong>{{ r.mes }}</strong></td>
+                <td><span class="badge bg-info text-dark">{{ r.estufa }}</span></td>
+                <td><span class="badge bg-secondary">{{ r.recipiente }}</span></td>
+                <td style="text-align:left; padding:8px 12px;">
+                    {% for p in r.projetos %}
+                    <div style="margin-bottom:4px; padding:4px 8px; background:#f8f9fa; border-radius:4px; font-size:.82rem; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:500; color:#2c3e50;">{{ p.nome }}</span>
+                        <span style="color:#666; font-size:.75rem;">
+                            <i class="bi bi-box" style="color:#6c757d"></i> {{ "{:,}".format(p.demanda) }} unid.
+                            &nbsp;|&nbsp;
+                            <i class="bi bi-rulers" style="color:#e74c3c"></i> {{ "%.1f"|format(p.demanda_m2) }} m²
+                        </span>
+                    </div>
+                    {% endfor %}
+                </td>
+                <td style="font-weight:600; color:#e74c3c">{{ "%.2f"|format(r.demanda_total) }} m²</td>
+                <td style="font-weight:600; color:#2e86c1">{{ "%.2f"|format(r.capacidade) }} m²</td>
+                <td style="font-weight:600; color:#27ae60">{{ "%.2f"|format(r.disponivel) }} m²</td>
+                <td>
+                    <div class="uso-mini-bar">
+                        <div class="mini-bar" style="width:80px">
+                            <div class="mini-bar-fill" 
+                                 style="width:{{ [r.uso, 100] | min }}%; background:{{ r.cor }}">
+                            </div>
+                        </div>
+                        <strong style="color:{{ r.cor }}; font-size:.9rem;">{{ r.uso }}%</strong>
+                        {% if r.acima_capacidade %}
+                        <span class="badge bg-danger ms-1" style="font-size:.7rem;">ACIMA +{{ "%.0f"|format(r.excesso) }}m²</span>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ===== BOTÕES DE EXPORTAÇÃO ===== -->
+<div class="row mt-4 mb-5">
+    <div class="col text-center">
+        <a href="/excel" class="btn btn-success export-btn me-3">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </a>
+        <a href="/pdf" class="btn btn-danger export-btn">
+            <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
+        </a>
+    </div>
+</div>
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

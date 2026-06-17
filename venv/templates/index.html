@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Dashboard – Ocupação das Estufas</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f1923;
+            --bg-card: rgba(255,255,255,0.04);
+            --glass: rgba(255,255,255,0.05);
+            --glass-border: rgba(255,255,255,0.08);
+            --text: #e8edf3;
+            --text-muted: rgba(255,255,255,0.45);
+            --text-dim: rgba(255,255,255,0.3);
+            --blue: #3b82f6;
+            --blue-glow: rgba(59,130,246,.25);
+            --purple: #a855f7;
+            --purple-glow: rgba(168,85,247,.25);
+            --green: #22c55e;
+            --yellow: #eab308;
+            --red: #ef4444;
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* ===== ANIMATED BG ===== */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: radial-gradient(ellipse at 20% 50%, rgba(59,130,246,.07) 0%, transparent 50%),
+                        radial-gradient(ellipse at 80% 20%, rgba(168,85,247,.05) 0%, transparent 50%),
+                        radial-gradient(ellipse at 50% 80%, rgba(34,197,94,.04) 0%, transparent 50%);
+            z-index: -1;
+            animation: bgShift 20s ease-in-out infinite alternate;
+        }
+        @keyframes bgShift {
+            0% { transform: translate(0,0); }
+            100% { transform: translate(-5%,-3%); }
+        }
+
+        /* ===== HEADER ===== */
+        .dash-header {
+            background: rgba(15,25,35,0.85);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 18px 0;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .dash-header h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, #fff, rgba(255,255,255,.65));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .dash-header small {
+            color: var(--text-muted);
+            font-size: .72rem;
+        }
+
+        /* ===== NAV ===== */
+        .nav-bar {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--glass-border);
+            padding: 6px 24px;
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            overflow-x: auto;
+        }
+        .nav-bar a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: .8rem;
+            padding: 7px 14px;
+            border-radius: 8px;
+            transition: all .2s;
+            white-space: nowrap;
+        }
+        .nav-bar a:hover { background: rgba(255,255,255,.06); color: var(--text); }
+        .nav-bar a.active {
+            background: linear-gradient(135deg, var(--blue), #2563eb);
+            color: #fff;
+            box-shadow: 0 4px 15px var(--blue-glow);
+        }
+
+        /* ===== FILTROS ===== */
+        .filtros-box {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 14px 18px;
+            margin-bottom: 24px;
+        }
+        .filtros-box label {
+            color: var(--text-dim);
+            font-size: .65rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            font-weight: 600;
+        }
+        .filtros-box .form-select {
+            background: rgba(255,255,255,.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            font-size: .8rem;
+            border-radius: 8px;
+        }
+        .filtros-box .form-select option { background: #1a2332; color: var(--text); }
+        .filtros-box .btn-primary {
+            background: linear-gradient(135deg, var(--blue), #2563eb);
+            border: none;
+            font-weight: 600;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px var(--blue-glow);
+        }
+
+        /* ===== ALERTAS ===== */
+        .alert {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.2);
+            color: #fca5a5;
+            border-radius: var(--radius-sm);
+            font-size: .82rem;
+        }
+        .alert-warning {
+            background: rgba(234,179,8,0.1);
+            border-color: rgba(234,179,8,0.2);
+            color: #fde68a;
+        }
+
+        /* ===== REFERÊNCIA ===== */
+        .ref-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .ref-bar h4 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin: 0;
+        }
+        .ref-bar .ref-date {
+            font-size: .8rem;
+            color: var(--text-muted);
+        }
+        .ref-bar .ref-date strong { color: var(--blue); }
+        .pico-pill {
+            background: rgba(239,68,68,0.12);
+            border: 1px solid rgba(239,68,68,0.2);
+            color: #fca5a5;
+            padding: 7px 16px;
+            border-radius: 30px;
+            font-size: .78rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .pico-pill.ok { background: rgba(34,197,94,0.12); border-color: rgba(34,197,94,0.2); color: #86efac; }
+        .pico-pill.warn { background: rgba(234,179,8,0.12); border-color: rgba(234,179,8,0.2); color: #fde68a; }
+
+        /* ===== ESTUFA CARDS ===== */
+        .estufa-card {
+            background: var(--glass);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 26px;
+            position: relative;
+            overflow: hidden;
+            transition: all .4s cubic-bezier(.4,0,.2,1);
+        }
+        .estufa-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--blue), #60a5fa);
+        }
+        .estufa-card.cdv9::before {
+            background: linear-gradient(90deg, var(--purple), #c084fc);
+        }
+        .estufa-card:hover {
+            border-color: rgba(255,255,255,.14);
+            transform: translateY(-3px);
+            box-shadow: 0 20px 50px rgba(0,0,0,.3);
+        }
+        .estufa-card.danger { border-color: rgba(239,68,68,0.3); }
+        .estufa-card.warning { border-color: rgba(234,179,8,0.3); }
+
+        .estufa-hdr {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+        .estufa-name {
+            font-size: 1.25rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .estufa-name.c1 { color: #60a5fa; }
+        .estufa-name.c9 { color: #c084fc; }
+        .status-pill {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: .7rem;
+            letter-spacing: .3px;
+            text-transform: uppercase;
+        }
+        .st-ok { background: rgba(34,197,94,0.14); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+        .st-warn { background: rgba(234,179,8,0.14); color: #fde68a; border: 1px solid rgba(234,179,8,0.2); }
+        .st-crit { background: rgba(239,68,68,0.14); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+
+        /* Gauge */
+        .gauge-wrap {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 0 auto;
+        }
+        .gauge-bg { fill: none; stroke: rgba(255,255,255,.06); stroke-width: 12; }
+        .gauge-fill {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+            transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1);
+            filter: drop-shadow(0 0 6px currentColor);
+        }
+        .gauge-fill.green { stroke: var(--green); color: var(--green); }
+        .gauge-fill.yellow { stroke: var(--yellow); color: var(--yellow); }
+        .gauge-fill.red { stroke: var(--red); color: var(--red); }
+        .gauge-center {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%);
+            text-align: center;
+        }
+        .gauge-val {
+            font-size: 2.2rem;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: -1px;
+        }
+        .gauge-val.green { color: var(--green); }
+        .gauge-val.yellow { color: var(--yellow); }
+        .gauge-val.red { color: var(--red); }
+        .gauge-lbl {
+            font-size: .6rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+
+        /* Metricas */
+        .met-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .met-item {
+            background: rgba(255,255,255,.03);
+            border: 1px solid rgba(255,255,255,.04);
+            border-radius: var(--radius-sm);
+            padding: 12px 8px;
+            text-align: center;
+        }
+        .met-val { font-size: 1.2rem; font-weight: 800; line-height: 1; }
+        .met-val.cap { color: var(--blue); }
+        .met-val.cons { color: var(--red); }
+        .met-val.disp { color: var(--green); }
+        .met-lbl {
+            font-size: .55rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .exc-alert {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            margin-top: 14px;
+            font-weight: 600;
+            color: #fca5a5;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: .82rem;
+            animation: excPulse 2s infinite;
+        }
+        @keyframes excPulse {
+            0%,100% { opacity: 1; }
+            50% { opacity: .8; }
+        }
+
+        /* ===== CONSOLIDADO ===== */
+        .consol-bar {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 18px;
+            display: grid;
+            grid-template-columns: repeat(4,1fr);
+            gap: 16px;
+            text-align: center;
+        }
+        .ci { position: relative; }
+        .ci:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            right: -8px; top: 10%; height: 80%;
+            width: 1px;
+            background: var(--glass-border);
+        }
+        .ci-label {
+            font-size: .6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-dim);
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .ci-val { font-size: 1.4rem; font-weight: 800; }
+        .ci-val.blue { color: var(--blue); }
+        .ci-val.red { color: var(--red); }
+        .ci-val.green { color: var(--green); }
+        .ci-unit { font-size: .65rem; color: var(--text-dim); }
+
+        /* ===== TIMELINE ===== */
+        .tl-section {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 22px;
+            position: relative;
+            overflow: hidden;
+        }
+        .tl-section::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--blue), #60a5fa);
+        }
+        .tl-section.cdv9::before {
+            background: linear-gradient(90deg, var(--purple), #c084fc);
+        }
+        .tl-title {
+            font-size: .95rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tl-title.c1 { color: #60a5fa; }
+        .tl-title.c9 { color: #c084fc; }
+        .tl-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+            gap: 8px;
+        }
+        .tl-card {
+            background: rgba(255,255,255,.03);
+            border: 1px solid rgba(255,255,255,.05);
+            border-radius: 10px;
+            padding: 12px 6px;
+            text-align: center;
+            transition: all .3s cubic-bezier(.4,0,.2,1);
+            cursor: default;
+            position: relative;
+            overflow: hidden;
+        }
+        .tl-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: var(--green);
+            border-radius: 10px 10px 0 0;
+        }
+        .tl-card.warning::before { background: var(--yellow); }
+        .tl-card.danger::before { background: var(--red); }
+        .tl-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255,255,255,.14);
+            box-shadow: 0 14px 35px rgba(0,0,0,.3);
+        }
+        .tl-m {
+            font-size: .55rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: .8px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        .tl-v {
+            font-size: 1.15rem;
+            font-weight: 900;
+            color: var(--green);
+            line-height: 1;
+        }
+        .tl-v.warning { color: var(--yellow); }
+        .tl-v.danger { color: var(--red); }
+        .tl-s {
+            font-size: .5rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+            font-weight: 600;
+        }
+        /* Tooltip */
+        .tl-tip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10,18,28,0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,.1);
+            color: var(--text);
+            padding: 9px 12px;
+            border-radius: 8px;
+            z-index: 1000;
+            font-size: .68rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,.5);
+            white-space: nowrap;
+            text-align: left;
+            line-height: 1.6;
+        }
+        .tl-tip::after {
+            content: '';
+            position: absolute;
+            bottom: -5px; left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(10,18,28,0.95);
+        }
+        .tl-card:hover .tl-tip {
+            display: block;
+            animation: tipIn .2s ease;
+        }
+        @keyframes tipIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* ===== SECTION HEADERS ===== */
+        .sec-hdr {
+            font-size: .92rem;
+            font-weight: 700;
+            color: var(--text);
+            margin: 28px 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sec-hdr i { color: var(--blue); font-size: 1rem; }
+
+        /* ===== CHART ===== */
+        .chart-card {
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius);
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        /* ===== DEMAND TABLE ===== */
+        .dem-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .82rem;
+        }
+        .dem-table thead th {
+            background: rgba(255,255,255,0.06);
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: .7rem;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            padding: 14px 12px;
+            text-align: center;
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+        }
+        .dem-table tbody td {
+            padding: 12px;
+            text-align: center;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .dem-table tbody tr:hover {
+            background: rgba(255,255,255,0.03);
+        }
+        .badge-est {
+            background: rgba(59,130,246,0.15);
+            color: #93c5fd;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+        .badge-rec {
+            background: rgba(168,85,247,0.15);
+            color: #d8b4fe;
+            padding: 3px 10px;
+            border-radius: 6px;
+            font-size: .75rem;
+            font-weight: 600;
+        }
+        .proj-cell {
+            text-align: left !important;
+            padding: 8px 12px !important;
+            min-width: 280px;
+        }
+        .proj-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            margin-bottom: 3px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 6px;
+            font-size: .78rem;
+        }
+        .proj-name {
+            font-weight: 500;
+            color: var(--text);
+        }
+        .proj-vals {
+            color: var(--text-muted);
+            font-size: .72rem;
+            white-space: nowrap;
+        }
+        .val-red { font-weight: 700; color: #f87171; }
+        .val-blue { font-weight: 700; color: #60a5fa; }
+        .val-green { font-weight: 700; color: #4ade80; }
+        .uso-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        .uso-track {
+            width: 70px;
+            height: 8px;
+            background: rgba(255,255,255,0.06);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .uso-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width .4s ease;
+        }
+        .badge-exc {
+            background: rgba(239,68,68,0.2);
+            color: #fca5a5;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: .65rem;
+            font-weight: 700;
+        }
+
+        /* ===== EXPORT ===== */
+        .export-zone {
+            text-align: center;
+            padding: 28px 0 40px;
+        }
+        .btn-exp {
+            padding: 10px 28px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: .85rem;
+            border: none;
+            transition: all .3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .btn-exp.xl {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: #fff;
+            box-shadow: 0 5px 18px rgba(34,197,94,.3);
+        }
+        .btn-exp.pd {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff;
+            box-shadow: 0 5px 18px rgba(239,68,68,.3);
+        }
+        .btn-exp:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+            color: #fff;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .consol-bar { grid-template-columns: repeat(2,1fr); }
+            .ci:not(:last-child)::after { display: none; }
+            .gauge-wrap { width: 120px; height: 120px; }
+            .gauge-val { font-size: 1.6rem; }
+            .met-grid { grid-template-columns: 1fr; }
+            .ref-bar { flex-direction: column; gap: 10px; text-align: center; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 3px; }
+
+        /* ===== DASHBOARD TABS ===== */
+        .dash-tabs {
+            display: inline-flex;
+            background: var(--glass);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 5px;
+            margin-bottom: 24px;
+            gap: 4px;
+        }
+        .dash-tab {
+            padding: 10px 28px;
+            border-radius: 8px;
+            font-size: .88rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            transition: all .25s ease;
+            position: relative;
+            white-space: nowrap;
+        }
+        .dash-tab:hover {
+            color: var(--text);
+            background: rgba(255,255,255,.04);
+        }
+        .dash-tab.active {
+            color: var(--green);
+            background: rgba(34,197,94,0.08);
+        }
+        .dash-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 20%;
+            width: 60%;
+            height: 3px;
+            background: var(--green);
+            border-radius: 3px;
+        }
+        .tab-pane {
+            display: none;
+        }
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Fade up animation */
+        .fu {
+            opacity: 0;
+            transform: translateY(16px);
+            animation: fadeUp .5s ease forwards;
+        }
+        .fu:nth-child(2) { animation-delay: .08s; }
+        .fu:nth-child(3) { animation-delay: .16s; }
+        .fu:nth-child(4) { animation-delay: .24s; }
+        @keyframes fadeUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="dash-header">
+    <h1><i class="bi bi-building"></i> Gestão Integrada das Estufas - PGM</h1>
+    <small>Desenvolvido por Amanda Dutra Sanchez</small>
+</div>
+
+<!-- NAV -->
+<div class="nav-bar">
+    <a href="/" class="active"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="/rotas"><i class="bi bi-diagram-3"></i> Projetos & Rotas</a>
+    <a href="/simulacao"><i class="bi bi-lightning-charge"></i> Simulação</a>
+    <a href="/auditoria"><i class="bi bi-shield-exclamation"></i> Auditoria</a>
+    <a href="/excel"><i class="bi bi-file-earmark-excel"></i> Excel</a>
+</div>
+
+<div class="container-fluid px-4 pt-3">
+
+<!-- FILTROS -->
+<div class="filtros-box fu">
+    <form method="get" class="row g-2 align-items-end" id="form-filtros">
+        <input type="hidden" name="tab" id="input-tab" value="{{ request.args.get('tab', 'tab-graficos') }}">
+        <div class="col-md-2">
+            <label class="form-label">Ano</label>
+            <select name="ano" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for a in anos %}
+                <option value="{{ a }}" {% if request.args.get('ano', '')|int == a %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Mês</label>
+            <select name="mes" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for m in meses %}
+                <option value="{{ m }}" {% if request.args.get('mes', '')|int == m %}selected{% endif %}>{{ m }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Estufa</label>
+            <select name="estufa" class="form-select form-select-sm">
+                <option value="">Todas</option>
+                {% for e in estufas %}
+                <option value="{{ e }}" {% if request.args.get('estufa') == e %}selected{% endif %}>{{ e }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Projeto</label>
+            <select name="projeto" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for p in projetos %}
+                <option value="{{ p }}" {% if request.args.get('projeto') == p %}selected{% endif %}>{{ p }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Recipiente</label>
+            <select name="recipiente" class="form-select form-select-sm">
+                <option value="">Todos</option>
+                {% for r in recipientes %}
+                <option value="{{ r }}" {% if request.args.get('recipiente') == r %}selected{% endif %}>{{ r }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-1 align-items-end">
+            <button type="submit" class="btn btn-primary btn-sm flex-fill">
+                <i class="bi bi-funnel-fill"></i> Filtrar
+            </button>
+            <a href="/?tab={{ request.args.get('tab', 'tab-graficos') }}" class="btn btn-outline-light btn-sm flex-fill" id="btn-limpar">
+                <i class="bi bi-x-circle"></i> Limpar
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- ALERTAS -->
+{% if total.alertas %}
+<div class="mb-3 fu">
+    {% for alerta in total.alertas %}
+    <div class="alert alert-{{ alerta.tipo }} alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ alerta.msg }}
+        <button type="button" class="btn-close btn-close-white btn-sm" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ===== DASHBOARD TABS ===== -->
+<div class="dash-tabs fu">
+    <button class="dash-tab active" onclick="switchTab('tab-graficos', this)"><i class="bi bi-bar-chart-line-fill me-1"></i> Visão Geral</button>
+    <button class="dash-tab" onclick="switchTab('tab-detalhes', this)"><i class="bi bi-table me-1"></i> Detalhes por Recipiente</button>
+</div>
+
+<!-- ===== TAB 1: VISÃO GERAL ===== -->
+<div id="tab-graficos" class="tab-pane active">
+
+<!-- REFERÊNCIA -->
+<div class="ref-bar fu">
+    <div>
+        <h4><i class="bi bi-speedometer2" style="color:var(--blue)"></i> Ocupação das Estufas</h4>
+        <span class="ref-date"><i class="bi bi-calendar3"></i> Referência: <strong>{{ total.mes_referencia }}</strong></span>
+    </div>
+</div>
+
+<!-- ===== GAUGE CARDS ===== -->
+<div class="row g-4 mb-4">
+    <!-- CDV1 -->
+    <div class="col-12 col-lg-6 fu">
+        <div class="estufa-card {% if total.CDV1.excesso > 0 %}danger{% elif total.CDV1.uso >= 85 %}warning{% endif %}">
+            <div class="estufa-hdr">
+                <div class="estufa-name c1"><i class="bi bi-building-fill"></i> CDV1</div>
+                <span class="status-pill {% if total.CDV1.uso < 60 %}st-ok{% elif total.CDV1.uso < 85 %}st-warn{% else %}st-crit{% endif %}">
+                    {% if total.CDV1.uso < 60 %}<i class="bi bi-check-circle-fill"></i> Normal
+                    {% elif total.CDV1.uso < 85 %}<i class="bi bi-exclamation-circle-fill"></i> Atenção
+                    {% else %}<i class="bi bi-exclamation-triangle-fill"></i> Crítico{% endif %}
+                </span>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-5">
+                    <div class="gauge-wrap">
+                        <svg viewBox="0 0 100 100" width="100%" height="100%">
+                            <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                            <circle class="gauge-fill {% if total.CDV1.uso < 60 %}green{% elif total.CDV1.uso < 85 %}yellow{% else %}red{% endif %}"
+                                    cx="50" cy="50" r="40"
+                                    stroke-dasharray="251.2"
+                                    stroke-dashoffset="{{ 251.2 - (251.2 * ([total.CDV1.uso, 100] | min) / 100) }}"></circle>
+                        </svg>
+                        <div class="gauge-center">
+                            <div class="gauge-val {% if total.CDV1.uso < 60 %}green{% elif total.CDV1.uso < 85 %}yellow{% else %}red{% endif %}">{{ total.CDV1.uso }}%</div>
+                            <div class="gauge-lbl">ocupado</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-7">
+                    <div class="met-grid">
+                        <div class="met-item">
+                            <div class="met-val cap">{{ "{:,.0f}".format(total.CDV1.capacidade) }}</div>
+                            <div class="met-lbl">Capacidade</div>
+                        </div>
+                        <div class="met-item">
+                            <div class="met-val cons">{{ "{:,.0f}".format(total.CDV1.consumido) }}</div>
+                            <div class="met-lbl">Consumido</div>
+                        </div>
+                        <div class="met-item">
+                            <div class="met-val disp">{{ "{:,.0f}".format(total.CDV1.disponivel) }}</div>
+                            <div class="met-lbl">Disponível</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if total.CDV1.excesso > 0 %}
+            <div class="exc-alert">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+                EXCESSO: {{ total.CDV1.excesso }} m² além do limite!
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- CDV9 -->
+    <div class="col-12 col-lg-6 fu">
+        <div class="estufa-card cdv9 {% if total.CDV9.excesso > 0 %}danger{% elif total.CDV9.uso >= 85 %}warning{% endif %}">
+            <div class="estufa-hdr">
+                <div class="estufa-name c9"><i class="bi bi-building-fill"></i> CDV9</div>
+                <span class="status-pill {% if total.CDV9.uso < 60 %}st-ok{% elif total.CDV9.uso < 85 %}st-warn{% else %}st-crit{% endif %}">
+                    {% if total.CDV9.uso < 60 %}<i class="bi bi-check-circle-fill"></i> Normal
+                    {% elif total.CDV9.uso < 85 %}<i class="bi bi-exclamation-circle-fill"></i> Atenção
+                    {% else %}<i class="bi bi-exclamation-triangle-fill"></i> Crítico{% endif %}
+                </span>
+            </div>
+            <div class="row align-items-center">
+                <div class="col-5">
+                    <div class="gauge-wrap">
+                        <svg viewBox="0 0 100 100" width="100%" height="100%">
+                            <circle class="gauge-bg" cx="50" cy="50" r="40"></circle>
+                            <circle class="gauge-fill {% if total.CDV9.uso < 60 %}green{% elif total.CDV9.uso < 85 %}yellow{% else %}red{% endif %}"
+                                    cx="50" cy="50" r="40"
+                                    stroke-dasharray="251.2"
+                                    stroke-dashoffset="{{ 251.2 - (251.2 * ([total.CDV9.uso, 100] | min) / 100) }}"></circle>
+                        </svg>
+                        <div class="gauge-center">
+                            <div class="gauge-val {% if total.CDV9.uso < 60 %}green{% elif total.CDV9.uso < 85 %}yellow{% else %}red{% endif %}">{{ total.CDV9.uso }}%</div>
+                            <div class="gauge-lbl">ocupado</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-7">
+                    <div class="met-grid">
+                        <div class="met-item">
+                            <div class="met-val cap">{{ "{:,.0f}".format(total.CDV9.capacidade) }}</div>
+                            <div class="met-lbl">Capacidade</div>
+                        </div>
+                        <div class="met-item">
+                            <div class="met-val cons">{{ "{:,.0f}".format(total.CDV9.consumido) }}</div>
+                            <div class="met-lbl">Consumido</div>
+                        </div>
+                        <div class="met-item">
+                            <div class="met-val disp">{{ "{:,.0f}".format(total.CDV9.disponivel) }}</div>
+                            <div class="met-lbl">Disponível</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% if total.CDV9.excesso > 0 %}
+            <div class="exc-alert">
+                <i class="bi bi-exclamation-octagon-fill"></i>
+                EXCESSO: {{ total.CDV9.excesso }} m² além do limite!
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- CONSOLIDADO -->
+<div class="consol-bar mb-4 fu">
+    <div class="ci">
+        <div class="ci-label">Capacidade Total</div>
+        <div class="ci-val blue">{{ "{:,.0f}".format(total.Capacidade) }}</div>
+        <div class="ci-unit">m²</div>
+    </div>
+    <div class="ci">
+        <div class="ci-label">Consumido</div>
+        <div class="ci-val red">{{ "{:,.0f}".format(total.Consumido) }}</div>
+        <div class="ci-unit">m²</div>
+    </div>
+    <div class="ci">
+        <div class="ci-label">Disponível</div>
+        <div class="ci-val green">{{ "{:,.0f}".format(total.Disponivel) }}</div>
+        <div class="ci-unit">m²</div>
+    </div>
+    <div class="ci">
+        <div class="ci-label">Ocupação Geral</div>
+        <div class="ci-val" style="color:{% if total.Uso < 60 %}var(--green){% elif total.Uso < 85 %}var(--yellow){% else %}var(--red){% endif %}">{{ total.Uso }}%</div>
+        <div class="ci-unit">uso</div>
+    </div>
+</div>
+
+
+
+<!-- ===== GRÁFICOS (FULL WIDTH) ===== -->
+<div class="row g-4 mb-4">
+    <div class="col-12 fu">
+        <div class="sec-hdr"><i class="bi bi-bar-chart-fill"></i> Capacidade × Ocupação</div>
+        <div class="chart-card">{{ barras | safe }}</div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12 fu">
+        <div class="sec-hdr"><i class="bi bi-grid-fill"></i> Mapa de Calor – Ocupação Mensal</div>
+        <div class="chart-card">{{ heatmap | safe }}</div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12 fu">
+        <div class="sec-hdr"><i class="bi bi-graph-up"></i> Evolução da Ocupação</div>
+        <div class="chart-card" style="min-height: 420px;">{{ ocupacao | safe }}</div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12 fu">
+        <div class="sec-hdr"><i class="bi bi-calendar-range-fill"></i> Cronograma dos Projetos</div>
+        <div class="chart-card" style="min-height: 420px;">{{ gantt | safe }}</div>
+    </div>
+</div>
+
+</div><!-- /tab-graficos -->
+
+<!-- ===== TAB 2: DETALHES POR RECIPIENTE ===== -->
+<div id="tab-detalhes" class="tab-pane">
+
+<!-- ===== TABELA DE DEMANDAS ===== -->
+<div class="sec-hdr"><i class="bi bi-table"></i> Detalhes da Ocupação por Recipiente</div>
+<div class="chart-card mb-4" style="overflow-x:auto; padding:0;">
+    <table class="dem-table">
+        <thead>
+            <tr>
+                <th>Ano</th>
+                <th>Mês</th>
+                <th>Estufa</th>
+                <th>Recipiente</th>
+                <th>Projetos (Demanda)</th>
+                <th>Demanda Total</th>
+                <th>Capacidade</th>
+                <th>Disponível</th>
+                <th>Uso (%)</th>
+            </tr>
+        </thead>
+        <tbody id="tabela-detalhes-body">
+            {% for r in tabela_rows %}
+            <tr data-ano="{{ r.ano }}" data-mes="{{ r.mes }}" data-estufa="{{ r.estufa }}" data-recipiente="{{ r.recipiente }}" data-projetos="{{ r.projetos | map(attribute='nome') | join(',') }}">
+                <td><strong>{{ r.ano }}</strong></td>
+                <td><strong>{{ r.mes }}</strong></td>
+                <td><span class="badge-est">{{ r.estufa }}</span></td>
+                <td><span class="badge-rec">{{ r.recipiente }}</span></td>
+                <td class="proj-cell">
+                    {% for p in r.projetos %}
+                    <div class="proj-row">
+                        <span class="proj-name">{{ p.nome }}</span>
+                        <span class="proj-vals">
+                            <i class="bi bi-box" style="color:var(--text-dim)"></i> {{ "{:,}".format(p.demanda) }} un.
+                            ·
+                            <i class="bi bi-rulers" style="color:#f87171"></i> {{ "%.1f"|format(p.demanda_m2) }} m²
+                        </span>
+                    </div>
+                    {% endfor %}
+                </td>
+                <td class="val-red">{{ "%.1f"|format(r.demanda_total) }} m²</td>
+                <td class="val-blue">{{ "%.1f"|format(r.capacidade) }} m²</td>
+                <td class="val-green">{{ "%.1f"|format(r.disponivel) }} m²</td>
+                <td>
+                    <div class="uso-cell">
+                        <div class="uso-track">
+                            <div class="uso-fill" style="width:{{ [r.uso, 100] | min }}%; background:{{ r.cor }};"></div>
+                        </div>
+                        <strong style="color:{{ r.cor }}">{{ r.uso }}%</strong>
+                        {% if r.acima_capacidade %}
+                        <span class="badge-exc">+{{ "%.0f"|format(r.excesso) }}m²</span>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+</div><!-- /tab-detalhes -->
+
+<!-- EXPORT -->
+<div class="export-zone fu">
+    <a href="/excel" class="btn-exp xl"><i class="bi bi-file-earmark-excel-fill"></i> Exportar Excel</a>
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ======= TROCA DE ABAS =======
+function switchTab(tabId, btn) {
+    // Esconder todas as tab-panes
+    document.querySelectorAll('.tab-pane').forEach(function(p) { p.classList.remove('active'); });
+    // Desativar todos os botões
+    document.querySelectorAll('.dash-tab').forEach(function(b) { b.classList.remove('active'); });
+    // Ativar tab e botão clicado
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+    // Atualizar campo hidden do formulário para manter aba ao filtrar
+    var inputTab = document.getElementById('input-tab');
+    if (inputTab) inputTab.value = tabId;
+    // Atualizar link Limpar para manter aba
+    var btnLimpar = document.getElementById('btn-limpar');
+    if (btnLimpar) btnLimpar.href = '/?tab=' + tabId;
+    // Re-trigger fade-up animations
+    document.querySelectorAll('#' + tabId + ' .fu').forEach(function(el) {
+        el.style.animation = 'none';
+        el.offsetHeight;
+        el.style.animation = '';
+    });
+    // Recalcular layout dos gráficos Plotly (se necessário)
+    if (tabId === 'tab-detalhes') return;
+    setTimeout(function() {
+        document.querySelectorAll('#' + tabId + ' .js-plotly-plot').forEach(function(p) {
+            try { Plotly.Plots.resize(p); } catch(e) {}
+        });
+    }, 100);
+}
+
+// ======= RESTAURAR ABA AO CARREGAR PÁGINA =======
+document.addEventListener('DOMContentLoaded', function() {
+    var urlParams = new URLSearchParams(window.location.search);
+    var tabParam = urlParams.get('tab');
+    if (tabParam && tabParam !== 'tab-graficos') {
+        var tabPane = document.getElementById(tabParam);
+        var allBtns = document.querySelectorAll('.dash-tab');
+        if (tabPane && allBtns.length > 0) {
+            // Encontrar o botão correspondente
+            allBtns.forEach(function(btn) {
+                if (btn.getAttribute('onclick').indexOf(tabParam) !== -1) {
+                    switchTab(tabParam, btn);
+                }
+            });
+        }
+    }
+});
+
+// ======= FILTRO DA TABELA DE DETALHES =======
+function filtrarTabelaDetalhes() {
+    var fAno = document.getElementById('filtro-det-ano').value;
+    var fMes = document.getElementById('filtro-det-mes').value;
+    var fEstufa = document.getElementById('filtro-det-estufa').value;
+    var fProjeto = document.getElementById('filtro-det-projeto').value;
+    var fRecipiente = document.getElementById('filtro-det-recipiente').value;
+
+    var tbody = document.getElementById('tabela-detalhes-body');
+    if (!tbody) return;
+    var rows = tbody.getElementsByTagName('tr');
+
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        var show = true;
+
+        if (fAno && row.getAttribute('data-ano') !== fAno) show = false;
+        if (fMes && row.getAttribute('data-mes') !== fMes) show = false;
+        if (fEstufa && row.getAttribute('data-estufa') !== fEstufa) show = false;
+        if (fRecipiente && row.getAttribute('data-recipiente') !== fRecipiente) show = false;
+        if (fProjeto) {
+            var projetos = (row.getAttribute('data-projetos') || '');
+            if (projetos.indexOf(fProjeto) === -1) show = false;
+        }
+        row.style.display = show ? '' : 'none';
+    }
+}
+
+function limparFiltroDetalhes() {
+    document.getElementById('filtro-det-ano').value = '';
+    document.getElementById('filtro-det-mes').value = '';
+    document.getElementById('filtro-det-estufa').value = '';
+    document.getElementById('filtro-det-projeto').value = '';
+    document.getElementById('filtro-det-recipiente').value = '';
+    filtrarTabelaDetalhes();
+}
+
+function limparFiltroGeral() {
+    window.location.href = '/';
+}
+
+// Apply dark theme to Plotly charts
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        document.querySelectorAll('.js-plotly-plot').forEach(function(p) {
+            try {
+                Plotly.relayout(p, {
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: '#94a3b8', size: 11 },
+                    'xaxis.gridcolor': 'rgba(255,255,255,0.04)',
+                    'yaxis.gridcolor': 'rgba(255,255,255,0.04)',
+                    'xaxis.linecolor': 'rgba(255,255,255,0.08)',
+                    'yaxis.linecolor': 'rgba(255,255,255,0.08)',
+                    'xaxis.tickfont.color': '#94a3b8',
+                    'yaxis.tickfont.color': '#94a3b8',
+                    'legend.font.color': '#94a3b8',
+                    'title.font.color': '#e8edf3'
+                });
+            } catch(e) {}
+        });
+    }, 400);
+});
+</script>
+</body>
+</html>

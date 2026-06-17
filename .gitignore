@@ -1,0 +1,34 @@
+# Bibliotecas do ambiente virtual (não são código-fonte)
+venv/Lib/
+venv/Scripts/
+venv/Include/
+venv/share/
+venv/pyvenv.cfg
+.venv/
+
+# Banco de dados (contém dados de produção)
+*.db
+*.sqlite
+*.sqlite3
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/__pycache__/
+venv/templates/__pycache__/
+
+# Logs e arquivos temporários
+*.log
+server_log.txt
+debug_output.html
+
+# Arquivos de ambiente e segredos
+.env
+*.env
+
+# IDE e sistema operacional
+.vscode/
+.idea/
+*.DS_Store
+Thumbs.db
